@@ -67,14 +67,32 @@ public class ObjectAccessRequest {
         this.status = status;
     }
 
+    public Long getId() {
+        return id;
+    }
+
+    public ObjectAccessRequest approve() {
+        this.status = "approved";
+        return this;
+    }
+
+    public ObjectAccessRequest reject() {
+        this.status = "rejected";
+        return this;
+    }
+
     @Override
     public String toString() {
         return "ObjectAccessRequest{" +
-                "bucketObject=" + bucketObject +
+                "id=" + id +
+                ", bucketObject=" + bucketObject +
                 ", owner=" + owner +
                 ", user=" + user +
                 ", access=" + access +
                 ", status='" + status + '\'' +
                 '}';
     }
+
+
+
 }

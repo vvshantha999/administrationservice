@@ -16,7 +16,7 @@ public class User {
     private Character adminFlag;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
-    private Set<AccessingUsers> accessingUsers = new HashSet<>();
+    private Set<AccessingUser> accessingUsers = new HashSet<>();
 
     @OneToMany(mappedBy = "owner")
     private List<ObjectAccessRequest> objectAccessRequestsForOwners;
@@ -52,7 +52,7 @@ public class User {
         this.adminFlag = adminFlag;
     }
 
-    public Set<AccessingUsers> getAccessingUsers() {
+    public Set<AccessingUser> getAccessingUsers() {
         return accessingUsers;
     }
 

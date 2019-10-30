@@ -4,7 +4,15 @@ import javax.persistence.*;
 import java.io.Serializable;
 
 @Entity
-public class AccessingUsers implements Serializable {
+@Table(name = "accessing_users")
+public class AccessingUser implements Serializable {
+
+
+    public AccessingUser(User user, BucketObject bucketObject, ObjectAccess objectAccess) {
+        this.user = user;
+        this.bucketObject = bucketObject;
+        this.access = objectAccess;
+    }
 
     @Id
     @ManyToOne
@@ -31,6 +39,7 @@ public class AccessingUsers implements Serializable {
     public ObjectAccess getAccess() {
         return access;
     }
+
 
     @Override
     public String toString() {

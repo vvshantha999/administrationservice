@@ -26,7 +26,7 @@ public class BucketObject {
 
 
     @OneToMany(mappedBy = "bucketObject", cascade = CascadeType.ALL)
-    private Set<AccessingUsers> accessingUsers = new HashSet<>();
+    private Set<AccessingUser> accessingUsers = new HashSet<>();
 
     public Long getId() {
         return id;
@@ -44,8 +44,13 @@ public class BucketObject {
         return owner;
     }
 
-    public Set<AccessingUsers> getAccessingUsers() {
+    public Set<AccessingUser> getAccessingUsers() {
         return accessingUsers;
+    }
+
+    public BucketObject addAccessingUser(AccessingUser accessingUser) {
+        accessingUsers.add( accessingUser );
+        return this;
     }
 
     @Override
