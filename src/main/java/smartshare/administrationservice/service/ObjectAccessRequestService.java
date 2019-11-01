@@ -3,6 +3,8 @@ package smartshare.administrationservice.service;
 import com.oracle.tools.packager.Log;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import smartshare.administrationservice.constant.StatusConstants;
+import smartshare.administrationservice.dto.UsersAccessingOwnerObject;
 import smartshare.administrationservice.models.AccessingUser;
 import smartshare.administrationservice.models.BucketObject;
 import smartshare.administrationservice.models.ObjectAccessRequest;
@@ -33,12 +35,12 @@ public class ObjectAccessRequestService {
 
         if (!objectAccessRequests.isEmpty()) {
             List<ObjectAccessRequest> createdObjectAccessRequest = objectAccessRequestRepository.saveAll( objectAccessRequests );
-            List<String> createdObjectAccessRequests = createdObjectAccessRequest.stream().map( objectAccessRequest -> objectAccessRequest.getId() > 0 ? "Success" : "Failed" ).collect( Collectors.toList() );
-            if (!createdObjectAccessRequests.contains( "Failed" )) {
-                statusOfOperation.setMessage( "Success" );
+            List<String> createdObjectAccessRequests = createdObjectAccessRequest.stream().map( objectAccessRequest -> objectAccessRequest.getId() > 0 ? StatusConstants.SUCCESS.toString() : StatusConstants.FAILED.toString() ).collect( Collectors.toList() );
+            if (!createdObjectAccessRequests.contains( StatusConstants.FAILED.toString() )) {
+                statusOfOperation.setMessage( StatusConstants.SUCCESS.toString() );
                 objectAccessRequestRepository.flush();
             } else {
-                statusOfOperation.setMessage( "Failed" );
+                statusOfOperation.setMessage( StatusConstants.FAILED.toString() );
             }
         }
         return statusOfOperation; // have to test jpa update
@@ -50,10 +52,10 @@ public class ObjectAccessRequestService {
         if (!objectAccessRequests.isEmpty()) {
             try {
                 objectAccessRequestRepository.deleteInBatch( objectAccessRequests );
-                statusOfOperation.setMessage( "Success" );
+                statusOfOperation.setMessage( StatusConstants.SUCCESS.toString() );
             } catch (Exception e) {
                 log.error( "Error in deleting the object access requests " + e.getMessage() );
-                statusOfOperation.setMessage( "Failed" );
+                statusOfOperation.setMessage( StatusConstants.FAILED.toString() );
             }
         }
         return statusOfOperation;
@@ -75,7 +77,7 @@ public class ObjectAccessRequestService {
         log.info( "Inside approveObjectAccessRequest" );
         ObjectAccessRequest approvedObjectAccessRequest = objectAccessRequest.approve();
         objectAccessRequestRepository.saveAndFlush( approvedObjectAccessRequest );
-        statusOfOperation.setMessage( updateObjectAccessingUserList( approvedObjectAccessRequest ) != null ? "Success" : "Failed" );
+        statusOfOperation.setMessage( updateObjectAccessingUserList( approvedObjectAccessRequest ) != null ? StatusConstants.SUCCESS.toString() : StatusConstants.FAILED.toString() );
         // have to test whether the bucket object contains this added user or not;
         return statusOfOperation;
     }
@@ -84,7 +86,34 @@ public class ObjectAccessRequestService {
         log.info( "Inside approveObjectAccessRequest" );
         ObjectAccessRequest rejectedObjectAccessRequest = objectAccessRequest.reject();
         ObjectAccessRequest rejectedObjectAccessRequestSaveOperationResult = objectAccessRequestRepository.saveAndFlush( rejectedObjectAccessRequest );
-        statusOfOperation.setMessage( rejectedObjectAccessRequestSaveOperationResult.getId().equals( objectAccessRequest.getId() ) ? "Success" : "Failed" ); // have to check if condition for status
+        statusOfOperation.setMessage( rejectedObjectAccessRequestSaveOperationResult.getId().equals( objectAccessRequest.getId() ) ? StatusConstants.SUCCESS.toString() : StatusConstants.FAILED.toString() ); // have to check if condition for status
         return statusOfOperation;
+    }
+
+
+    private UsersAccessingOwnerObject changeDataFormatForUi(BucketObject bucketObject) {
+        return new UsersAccessingOwnerObject( bucketObject );
+    }
+
+    public List<UsersAccessingOwnerObject> getListOfUsersAccessingOwnerObject(String ownerName) {
+        log.info( "Inside getListOfUsersAccessingOwnerObject" );
+        List<BucketObject> bucketObjectsBelongingToOwner = bucketObjectRepository.findAllByOwner( ownerName );
+        List<UsersAccessingOwnerObject> listOfUsersAccessingOwnerObject = bucketObjectsBelongingToOwner.stream().map( this::changeDataFormatForUi ).collect( Collectors.toList() );
+        System.out.println( "listOfUsersAccessingOwnerObject---->" + listOfUsersAccessingOwnerObject );
+        return listOfUsersAccessingOwnerObject;
+    }
+
+    public List<ObjectAccessRequest> getAccessRequestsCreatedByUser(String userName) {
+        log.info( "Inside getAccessRequestsCreatedByUser" );
+        List<ObjectAccessRequest> accessRequests = objectAccessRequestRepository.findAllByUser( userName );
+        System.out.println( "accessRequests------------->" + accessRequests );
+        return accessRequests;
+    }
+
+    public List<ObjectAccessRequest> getAccessRequestsToBeApprovedByOwnerOfObject(String ownerName) {
+        log.info( "Inside getAccessRequestsToBeApprovedByOwnerOfObject" );
+        List<ObjectAccessRequest> accessRequestsToBeApprovedByOwnerOfObject = objectAccessRequestRepository.findObjectAccessRequestsByOwnerAndStatus( ownerName, StatusConstants.INPROGRESS.toString() );
+        System.out.println( "accessRequestsToBeApprovedByOwnerOfObject-------->" + accessRequestsToBeApprovedByOwnerOfObject );
+        return accessRequestsToBeApprovedByOwnerOfObject;
     }
 }

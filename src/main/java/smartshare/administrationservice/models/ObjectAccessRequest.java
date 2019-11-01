@@ -1,5 +1,7 @@
 package smartshare.administrationservice.models;
 
+import smartshare.administrationservice.constant.StatusConstants;
+
 import javax.persistence.*;
 
 @Entity
@@ -26,6 +28,10 @@ public class ObjectAccessRequest {
     private ObjectAccess access;
 
     private String status;
+
+    public ObjectAccessRequest() {
+        status = StatusConstants.INPROGRESS.toString();
+    }
 
     public BucketObject getBucketObject() {
         return bucketObject;
@@ -72,12 +78,12 @@ public class ObjectAccessRequest {
     }
 
     public ObjectAccessRequest approve() {
-        this.status = "approved";
+        this.status = StatusConstants.APPROVED.toString();
         return this;
     }
 
     public ObjectAccessRequest reject() {
-        this.status = "rejected";
+        this.status = StatusConstants.REJECTED.toString();
         return this;
     }
 

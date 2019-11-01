@@ -4,6 +4,7 @@ package smartshare.administrationservice.controller;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import smartshare.administrationservice.dto.UsersAccessingOwnerObject;
 import smartshare.administrationservice.models.ObjectAccessRequest;
 import smartshare.administrationservice.models.Status;
 import smartshare.administrationservice.service.ObjectAccessRequestService;
@@ -46,6 +47,27 @@ public class ObjectAccessRequestController {
         log.info( "Inside approveObjectAccessRequest" );
         return objectAccessRequestService.rejectObjectAccessRequest( objectAccessRequest );
     }
+
+    @GetMapping(value = "/listOfUsersAccessingOwnersObject")
+    public List<UsersAccessingOwnerObject> getListOfUsersAccessingOwnerObject(@RequestParam("owner") String ownerName) {
+        log.info( "Inside getListOfUsersAccessingOwnersFile" );
+        return objectAccessRequestService.getListOfUsersAccessingOwnerObject( ownerName );
+
+    }
+
+    @GetMapping(value = "/accessRequestsCreatedByUser")
+    public List<ObjectAccessRequest> getAccessRequestsCreatedByUser(@RequestParam("user") String userName) {
+        log.info( "Inside getListOfUsersAccessingOwnersFile" );
+        return objectAccessRequestService.getAccessRequestsCreatedByUser( userName );
+    }
+
+    @GetMapping(value = "/accessRequestsCreatedByUser")
+    public List<ObjectAccessRequest> getAccessRequestsToBeApprovedByOwnerOfObject(@RequestParam("owner") String ownerName) {
+        log.info( "Inside getListOfUsersAccessingOwnersFile" );
+        return objectAccessRequestService.getAccessRequestsToBeApprovedByOwnerOfObject( ownerName );
+    }
+
+
 
 
 }
