@@ -18,6 +18,9 @@ public class User {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private Set<AccessingUser> accessingUsers = new HashSet<>();
 
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    private Set<UserBucketMapping> accessingBucket = new HashSet<>();
+
     @OneToMany(mappedBy = "owner")
     private List<ObjectAccessRequest> objectAccessRequestsForOwners;
 
@@ -66,6 +69,10 @@ public class User {
 
     public Set<Bucket> getBuckets() {
         return buckets;
+    }
+
+    public Set<UserBucketMapping> getAccessingBucket() {
+        return accessingBucket;
     }
 
     @Override

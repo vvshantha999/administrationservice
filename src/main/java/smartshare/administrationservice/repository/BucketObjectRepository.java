@@ -9,6 +9,6 @@ public interface BucketObjectRepository extends JpaRepository<BucketObject, Long
 
     List<BucketObject> findAllByOwner(String owner); // 1st method
 
-
+    BucketObject findByName(String objectName);
 
 }

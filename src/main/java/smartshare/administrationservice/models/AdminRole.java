@@ -15,7 +15,6 @@ public class AdminRole {
     private AdminAccess adminAccess;
 
     @OneToMany(mappedBy = "adminAccess")
-//    @JoinColumn(name = "fk_order")
     private List<BucketAccessRequest> bucketAccessRequestList;
 
     public AdminAccess getAdminAccess() {
@@ -24,6 +23,10 @@ public class AdminRole {
 
     public List<BucketAccessRequest> getBucketAccessRequestList() {
         return bucketAccessRequestList;
+    }
+
+    public Long getAdminRoleId() {
+        return adminRoleId;
     }
 
     @Override

@@ -2,8 +2,8 @@ package smartshare.administrationservice.models;
 
 
 import javax.persistence.*;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
+
 
 
 @Entity
@@ -26,7 +26,7 @@ public class BucketObject {
 
 
     @OneToMany(mappedBy = "bucketObject", cascade = CascadeType.ALL)
-    private Set<AccessingUser> accessingUsers = new HashSet<>();
+    private List<AccessingUser> accessingUsers;
 
     public Long getId() {
         return id;
@@ -44,14 +44,21 @@ public class BucketObject {
         return owner;
     }
 
-    public Set<AccessingUser> getAccessingUsers() {
-        return accessingUsers;
+    public BucketObject(String name, Bucket bucket, User owner) {
+        this.name = name;
+        this.bucket = bucket;
+        this.owner = owner;
     }
 
     public BucketObject addAccessingUser(AccessingUser accessingUser) {
         accessingUsers.add( accessingUser );
         return this;
     }
+
+    public List<AccessingUser> getAccessingUsers() {
+        return accessingUsers;
+    }
+
 
     @Override
     public String toString() {

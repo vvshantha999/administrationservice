@@ -1,5 +1,7 @@
 package smartshare.administrationservice.models;
 
+import smartshare.administrationservice.constant.StatusConstants;
+
 import javax.persistence.*;
 
 @Entity
@@ -31,6 +33,13 @@ public class BucketAccessRequest {
     @JoinColumn(name = "admin_role_id")
     private AdminRole adminRole;
 
+    public AdminRole getAdminRole() {
+        return adminRole;
+    }
+
+    public void setAdminRole(AdminRole adminRole) {
+        this.adminRole = adminRole;
+    }
 
     public AdminAccess getAdminAccess() {
         return adminAccess;
@@ -70,6 +79,14 @@ public class BucketAccessRequest {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public void approve() {
+        this.status = StatusConstants.APPROVED.toString();
+    }
+
+    public void reject() {
+        this.status = StatusConstants.REJECTED.toString();
     }
 
     @Override

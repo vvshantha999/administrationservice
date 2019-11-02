@@ -4,6 +4,7 @@ package smartshare.administrationservice.controller;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import smartshare.administrationservice.dto.ObjectAccessRequestFromUi;
 import smartshare.administrationservice.dto.UsersAccessingOwnerObject;
 import smartshare.administrationservice.models.ObjectAccessRequest;
 import smartshare.administrationservice.models.Status;
@@ -25,9 +26,9 @@ public class ObjectAccessRequestController {
     }
 
     @PostMapping(value = "/object/createAccessRequest")
-    public Status createObjectAccessRequest(@RequestBody List<ObjectAccessRequest> objectAccessRequests) {
+    public Status createObjectAccessRequest(@RequestBody List<ObjectAccessRequestFromUi> objectAccessRequestsFromUi) {
         log.info( "Inside createObjectAccessRequest" );
-        return objectAccessRequestService.createObjectAccessRequest( objectAccessRequests );
+        return objectAccessRequestService.createObjectAccessRequest( objectAccessRequestsFromUi );
     }
 
     @DeleteMapping(value = "/object/deleteAccessRequest")

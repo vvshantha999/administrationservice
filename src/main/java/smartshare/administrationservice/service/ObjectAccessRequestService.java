@@ -2,9 +2,12 @@ package smartshare.administrationservice.service;
 
 import com.oracle.tools.packager.Log;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import smartshare.administrationservice.constant.StatusConstants;
+import smartshare.administrationservice.dto.ObjectAccessRequestFromUi;
 import smartshare.administrationservice.dto.UsersAccessingOwnerObject;
+import smartshare.administrationservice.dto.mappers.ObjectAccessRequestMapper;
 import smartshare.administrationservice.models.AccessingUser;
 import smartshare.administrationservice.models.BucketObject;
 import smartshare.administrationservice.models.ObjectAccessRequest;
@@ -22,18 +25,23 @@ public class ObjectAccessRequestService {
     private ObjectAccessRequestRepository objectAccessRequestRepository;
     private BucketObjectRepository bucketObjectRepository;
     private Status statusOfOperation;
+    private ObjectAccessRequestMapper objectAccessRequestMapper;
 
-    ObjectAccessRequestService(ObjectAccessRequestRepository objectAccessRequestRepository, Status statusOfOperation, BucketObjectRepository bucketObjectRepository) {
+    @Autowired
+    ObjectAccessRequestService(ObjectAccessRequestRepository objectAccessRequestRepository, Status statusOfOperation,
+                               BucketObjectRepository bucketObjectRepository, ObjectAccessRequestMapper objectAccessRequestMapper) {
         this.objectAccessRequestRepository = objectAccessRequestRepository;
         this.statusOfOperation = statusOfOperation;
         this.bucketObjectRepository = bucketObjectRepository;
+        this.objectAccessRequestMapper = objectAccessRequestMapper;
     }
 
-    public Status createObjectAccessRequest(List<ObjectAccessRequest> objectAccessRequests) {
+    public Status createObjectAccessRequest(List<ObjectAccessRequestFromUi> objectAccessRequestsFromUi) {
 
         log.info( "Inside createObjectAccessRequest" );
 
-        if (!objectAccessRequests.isEmpty()) {
+        if (!objectAccessRequestsFromUi.isEmpty()) {
+            List<ObjectAccessRequest> objectAccessRequests = objectAccessRequestsFromUi.stream().map( objectAccessRequestFromUi -> (ObjectAccessRequest) objectAccessRequestMapper.map( objectAccessRequestFromUi ) ).collect( Collectors.toList() );
             List<ObjectAccessRequest> createdObjectAccessRequest = objectAccessRequestRepository.saveAll( objectAccessRequests );
             List<String> createdObjectAccessRequests = createdObjectAccessRequest.stream().map( objectAccessRequest -> objectAccessRequest.getId() > 0 ? StatusConstants.SUCCESS.toString() : StatusConstants.FAILED.toString() ).collect( Collectors.toList() );
             if (!createdObjectAccessRequests.contains( StatusConstants.FAILED.toString() )) {
@@ -68,6 +76,7 @@ public class ObjectAccessRequestService {
                 approvedObjectAccessRequest.getBucketObject(),
                 approvedObjectAccessRequest.getAccess() );
         BucketObject bucketObjectToBeUpdated = approvedObjectAccessRequest.getBucketObject().addAccessingUser( newAccessingUserToBeAdded );
+        // have to make sure how the access gets updated when read write are approved one after another.
         BucketObject creatingAccessingUserUnderGivenObject = bucketObjectRepository.saveAndFlush( bucketObjectToBeUpdated );
         System.out.println( "creatingAccessingUserUnderGivenObject----->" + creatingAccessingUserUnderGivenObject.getAccessingUsers() );
         return creatingAccessingUserUnderGivenObject;

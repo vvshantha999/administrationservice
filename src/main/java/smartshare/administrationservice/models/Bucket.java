@@ -19,6 +19,9 @@ public class Bucket {
     @OneToMany(mappedBy = "bucket", cascade = CascadeType.ALL) // have to verify mapping
     private List<BucketObject> objects;
 
+    @OneToMany(mappedBy = "bucket", cascade = CascadeType.ALL)
+    private List<UserBucketMapping> accessingUsers;
+
     public Long getId() {
         return id;
     }
@@ -50,6 +53,26 @@ public class Bucket {
 
     public void setObjects(List<BucketObject> objects) {
         this.objects = objects;
+    }
+
+    public List<UserBucketMapping> getAccessingUsers() {
+        return accessingUsers;
+    }
+
+    public void addUser(UserBucketMapping userBucketMapping) {
+        this.accessingUsers.add( userBucketMapping );
+    }
+
+    public void removeUser(UserBucketMapping userBucketMapping) {
+        this.getAccessingUsers().remove( userBucketMapping );
+    }
+
+    public void addBucketObject(BucketObject bucketObject) {
+        this.objects.add( bucketObject );
+    }
+
+    public void removeBucketObject(BucketObject bucketObject) {
+        this.getObjects().remove( bucketObject );
     }
 
     @Override
