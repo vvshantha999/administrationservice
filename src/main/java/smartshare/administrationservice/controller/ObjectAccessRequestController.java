@@ -62,7 +62,7 @@ public class ObjectAccessRequestController {
         return objectAccessRequestService.getAccessRequestsCreatedByUser( userName );
     }
 
-    @GetMapping(value = "/accessRequestsCreatedByUser")
+    @GetMapping(value = "/accessRequestsOfOwner")
     public List<ObjectAccessRequest> getAccessRequestsToBeApprovedByOwnerOfObject(@RequestParam("owner") String ownerName) {
         log.info( "Inside getListOfUsersAccessingOwnersFile" );
         return objectAccessRequestService.getAccessRequestsToBeApprovedByOwnerOfObject( ownerName );

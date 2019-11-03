@@ -1,9 +1,10 @@
 package smartshare.administrationservice.models;
 
 import javax.persistence.*;
+import java.io.Serializable;
 
 @Entity
-public class UserBucketMapping implements Cloneable {
+public class UserBucketMapping implements Serializable {
 
 
     @Id
@@ -15,7 +16,7 @@ public class UserBucketMapping implements Cloneable {
     @JoinColumn(name = "bucket_id")
     private Bucket bucket;
     @OneToOne
-    @JoinColumn(name = "access_id", referencedColumnName = "Id")
+    @JoinColumn(name = "bucket_access_id", referencedColumnName = "Id")
     private BucketAccess access;
 
     public UserBucketMapping(User user, Bucket bucket, BucketAccess bucketAccess) {
@@ -40,8 +41,4 @@ public class UserBucketMapping implements Cloneable {
         this.access = access;
     }
 
-    public Object clone() throws
-            CloneNotSupportedException {
-        return super.clone();
-    }
 }

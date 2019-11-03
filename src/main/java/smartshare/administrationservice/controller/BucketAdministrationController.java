@@ -7,7 +7,6 @@ import org.springframework.web.bind.annotation.*;
 import smartshare.administrationservice.dto.AddUserFromUiToBucket;
 import smartshare.administrationservice.dto.BucketAccessRequestFromUi;
 import smartshare.administrationservice.dto.RemoveUserFromBucket;
-import smartshare.administrationservice.models.Bucket;
 import smartshare.administrationservice.models.BucketAccessRequest;
 import smartshare.administrationservice.models.Status;
 import smartshare.administrationservice.service.BucketAccessRequestService;
@@ -31,18 +30,6 @@ public class BucketAdministrationController {
         this.bucketAccessRequestService = bucketAccessRequestService;
     }
 
-    @PostMapping(value = "/bucket")
-    public Bucket createBucket(@RequestBody String bucketName) {
-        log.info( "Inside createBucket" );
-        return bucketAdministrationService.createBucketInAccessManagementDb( bucketName );
-    }
-
-    @DeleteMapping(value = "/bucket")
-    public Status deleteBucket(@RequestBody String bucketName) {
-        log.info( "Inside createBucket" );
-        return bucketAdministrationService.deleteBucketInAccessManagementDb( bucketName );
-    }
-
     @PostMapping(value = "/bucket/createAccessRequest")
     public Status createBucketAccessRequest(@RequestBody BucketAccessRequestFromUi bucketAccessRequestFromUi) {
         log.info( "Inside createBucketAccessRequest" );
@@ -55,7 +42,7 @@ public class BucketAdministrationController {
         return bucketAccessRequestService.approveBucketAccessRequest( bucketAccessRequest );
     }
 
-    @PostMapping(value = "/bucket/approveAccessRequest")
+    @PostMapping(value = "/bucket/rejectAccessRequest")
     public Status rejectBucketAccessRequest(@RequestBody BucketAccessRequest bucketAccessRequest) {
         log.info( "Inside rejectBucketAccessRequest" );
         return bucketAccessRequestService.rejectBucketAccessRequest( bucketAccessRequest );

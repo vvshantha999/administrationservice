@@ -4,9 +4,8 @@ package smartshare.administrationservice.controller;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-import smartshare.administrationservice.dto.BucketObjectFromApi;
+import smartshare.administrationservice.dto.BucketMetadata;
 import smartshare.administrationservice.dto.ObjectMetadata;
-import smartshare.administrationservice.models.Status;
 import smartshare.administrationservice.service.APIRequestService;
 
 import java.util.List;
@@ -26,21 +25,16 @@ public class APIRequestController {
     }
 
     @GetMapping(value = "objects/accessInfo")
-    public List<Map<String, ObjectMetadata>> fetchMetaDataForObjectsInS3() {
+    public List<Map<String, ObjectMetadata>> fetchMetaDataForObjectsInGivenBucketForSpecificUser(@RequestParam("bucketName") String bucketName, @RequestParam("userName") String userName) {
         log.info( "Inside fetchMetaDataForObjectsInS3" );
-        return apiRequestService.fetchMetaDataForObjectsInS3();
+        return apiRequestService.fetchMetaDataForObjectsInGivenBucketForSpecificUser( bucketName, userName );
     }
 
-    @DeleteMapping(value = "objects")
-    public Status deleteObjectDetails(List<String> objectNamesToBeDeleted) {
-        log.info( "Inside deleteObjectDetails" );
-        return apiRequestService.deleteGivenObjectsInDb( objectNamesToBeDeleted );
+    @GetMapping(value = "buckets/accessInfo")
+    public List<Map<String, BucketMetadata>> fetchMetaDataForBucketsInS3(@RequestParam("userName") String userName) {
+        log.info( "Inside fetchMetaDataForObjectsInS3" );
+        return apiRequestService.fetchMetaDataForBucketsInS3( userName );
     }
 
-    @PostMapping(value = "objects")
-    public Status createAccessDetailsForGivenObject(@RequestBody List<BucketObjectFromApi> bucketObjectsFromApi) {
-        log.info( "Inside createAccessDetailsForGivenObject " );
-        return apiRequestService.createAccessDetailForGivenBucketObject( bucketObjectsFromApi );// have to confirm how file and folder are saved
-    }
 
 }

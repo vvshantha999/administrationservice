@@ -11,4 +11,6 @@ public interface BucketObjectRepository extends JpaRepository<BucketObject, Long
 
     BucketObject findByName(String objectName);
 
+    BucketObject findByNameAndBucket_Name(String name, String bucketName);
+
 }

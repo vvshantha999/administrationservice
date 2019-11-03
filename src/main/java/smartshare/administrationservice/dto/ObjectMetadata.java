@@ -1,12 +1,10 @@
 package smartshare.administrationservice.dto;
 
 
-import java.util.List;
-
 public class ObjectMetadata {
 
     private String ownerName;
-    private List<AccessingUsersInfoForApi> accessingUsersInfo;
+    private AccessingUserInfoForApi accessingUserInfo;
 
     public String getOwnerName() {
         return ownerName;
@@ -16,19 +14,19 @@ public class ObjectMetadata {
         this.ownerName = ownerName;
     }
 
-    public List<AccessingUsersInfoForApi> getAccessingUsersInfo() {
-        return accessingUsersInfo;
+    public AccessingUserInfoForApi getAccessingUserInfo() {
+        return accessingUserInfo;
     }
 
-    public void setAccessingUsersInfo(List<AccessingUsersInfoForApi> accessingUsersInfo) {
-        this.accessingUsersInfo = accessingUsersInfo;
+    public void setAccessingUserInfo(AccessingUserInfoForApi accessingUserInfo) {
+        this.accessingUserInfo = accessingUserInfo;
     }
 
     @Override
     public String toString() {
         return "ObjectMetadata{" +
                 "ownerName='" + ownerName + '\'' +
-                ", accessingUsersInfo=" + accessingUsersInfo +
+                ", accessingUsersInfo=" + accessingUserInfo +
                 '}';
     }
 }
