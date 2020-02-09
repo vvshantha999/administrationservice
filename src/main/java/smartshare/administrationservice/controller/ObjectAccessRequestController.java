@@ -3,11 +3,12 @@ package smartshare.administrationservice.controller;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import smartshare.administrationservice.dto.ObjectAccessRequestFromUi;
 import smartshare.administrationservice.dto.UsersAccessingOwnerObject;
 import smartshare.administrationservice.models.ObjectAccessRequest;
-import smartshare.administrationservice.models.Status;
 import smartshare.administrationservice.service.ObjectAccessRequestService;
 
 import java.util.List;
@@ -26,27 +27,37 @@ public class ObjectAccessRequestController {
     }
 
     @PostMapping(value = "/object/createAccessRequest")
-    public Status createObjectAccessRequest(@RequestBody List<ObjectAccessRequestFromUi> objectAccessRequestsFromUi) {
+    public ResponseEntity createObjectAccessRequest(@RequestBody List<ObjectAccessRequestFromUi> objectAccessRequestsFromUi) {
         log.info( "Inside createObjectAccessRequest" );
-        return objectAccessRequestService.createObjectAccessRequest( objectAccessRequestsFromUi );
+
+        // scenario requesting access for folders or files either read or write. From Ui not sure how the input is
+
+        return objectAccessRequestService.createObjectAccessRequest( objectAccessRequestsFromUi ) ? new ResponseEntity( HttpStatus.CREATED ) :
+                ResponseEntity.badRequest().build();
     }
 
     @DeleteMapping(value = "/object/deleteAccessRequest")
-    public Status deleteObjectAccessRequest(@RequestBody List<ObjectAccessRequest> objectAccessRequests) {
+    public ResponseEntity deleteObjectAccessRequest(@RequestBody List<ObjectAccessRequest> objectAccessRequests) {
         log.info( "Inside createObjectAccessRequest" );
-        return objectAccessRequestService.deleteObjectAccessRequest( objectAccessRequests );
+        return objectAccessRequestService.deleteObjectAccessRequest( objectAccessRequests ) ? ResponseEntity.ok().build() :
+                ResponseEntity.badRequest().build();
     }
 
     @PutMapping(value = "/object/approveAccessRequest")
-    public Status approveObjectAccessRequest(@RequestBody ObjectAccessRequest objectAccessRequest) {
+    public ResponseEntity approveObjectAccessRequest(@RequestBody ObjectAccessRequest objectAccessRequest) {
         log.info( "Inside approveObjectAccessRequest" );
-        return objectAccessRequestService.approveObjectAccessRequest( objectAccessRequest );
+
+        // in ui it has to send all the children files in folder to accept at a shot
+
+        return objectAccessRequestService.approveObjectAccessRequest( objectAccessRequest ) ? ResponseEntity.ok().build() :
+                ResponseEntity.badRequest().build();
     }
 
     @PutMapping(value = "/object/rejectAccessRequest")
-    public Status rejectObjectAccessRequest(@RequestBody ObjectAccessRequest objectAccessRequest) {
+    public ResponseEntity rejectObjectAccessRequest(@RequestBody ObjectAccessRequest objectAccessRequest) {
         log.info( "Inside approveObjectAccessRequest" );
-        return objectAccessRequestService.rejectObjectAccessRequest( objectAccessRequest );
+        return objectAccessRequestService.rejectObjectAccessRequest( objectAccessRequest ) ? ResponseEntity.ok().build() :
+                ResponseEntity.badRequest().build();
     }
 
     @GetMapping(value = "/listOfUsersAccessingOwnersObject")
@@ -67,8 +78,6 @@ public class ObjectAccessRequestController {
         log.info( "Inside getListOfUsersAccessingOwnersFile" );
         return objectAccessRequestService.getAccessRequestsToBeApprovedByOwnerOfObject( ownerName );
     }
-
-
 
 
 }

@@ -2,16 +2,16 @@ package smartshare.administrationservice.models;
 
 public class Status {
 
-    String message;
+    private Boolean value;
 
-    String reasonForFailure = null;
+    private String reasonForFailure = null;
 
-    public String getMessage() {
-        return message;
+    public Boolean getValue() {
+        return value;
     }
 
-    public void setMessage(String message) {
-        this.message = message;
+    public void setValue(Boolean value) {
+        this.value = value;
     }
 
     public String getReasonForFailure() {
@@ -25,7 +25,7 @@ public class Status {
     @Override
     public String toString() {
         return "Status{" +
-                "message='" + message + '\'' +
+                "message='" + value + '\'' +
                 ", reasonForFailure='" + reasonForFailure + '\'' +
                 '}';
     }

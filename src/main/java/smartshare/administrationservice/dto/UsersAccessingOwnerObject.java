@@ -1,9 +1,15 @@
 package smartshare.administrationservice.dto;
 
+
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.NoArgsConstructor;
 import smartshare.administrationservice.models.BucketObject;
 
 import java.util.List;
 
+@NoArgsConstructor
+@JsonAutoDetect
 public class UsersAccessingOwnerObject {
 
     private String objectName;
@@ -21,6 +27,16 @@ public class UsersAccessingOwnerObject {
             this.add( accessingUser.getUser().getUserName(), accessInfoBuilder.toString().trim() );
         } );
 
+    }
+
+    @JsonProperty("objectName")
+    public String getObjectName() {
+        return objectName;
+    }
+
+    @JsonProperty("accessingUsers")
+    public List<UserAccessingObject> getAccessingUsers() {
+        return accessingUsers;
     }
 
     private void add(String userName, String accessInfo) {

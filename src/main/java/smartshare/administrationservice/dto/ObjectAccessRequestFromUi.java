@@ -1,5 +1,8 @@
 package smartshare.administrationservice.dto;
 
+import lombok.NoArgsConstructor;
+
+@NoArgsConstructor
 public class ObjectAccessRequestFromUi {
 
     private String userName;
@@ -7,6 +10,14 @@ public class ObjectAccessRequestFromUi {
     private String objectName;
     private String ownerName;
     private String access;
+
+    public ObjectAccessRequestFromUi(String userName, String bucketName, String objectName, String ownerName, String access) {
+        this.userName = userName;
+        this.bucketName = bucketName;
+        this.objectName = objectName;
+        this.ownerName = ownerName;
+        this.access = access;
+    }
 
     public String getUserName() {
         return userName;

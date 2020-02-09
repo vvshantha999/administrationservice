@@ -1,10 +1,19 @@
 package smartshare.administrationservice.dto;
 
+import lombok.NoArgsConstructor;
+
+@NoArgsConstructor
 public class AddUserFromUiToBucket {
 
     private String userName;
     private String bucketName;
     private String objectName;
+
+    public AddUserFromUiToBucket(String userName, String bucketName) {
+        this.userName = userName;
+        this.bucketName = bucketName;
+        this.objectName = this.bucketName + "/" + this.userName;
+    }
 
     public String getUserName() {
         return userName;
@@ -15,7 +24,7 @@ public class AddUserFromUiToBucket {
     }
 
     public String getObjectName() {
-        return this.bucketName + "/" + this.userName;
+        return objectName;
     }
 
     @Override

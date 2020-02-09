@@ -9,6 +9,12 @@ public class BucketAccessRequestFromUi {
     private String bucketName;
     private String access;
 
+    public BucketAccessRequestFromUi(String userName, String bucketName, String access) {
+        this.userName = userName;
+        this.bucketName = bucketName;
+        this.access = access;
+    }
+
     public String getUserName() {
         return userName;
     }
