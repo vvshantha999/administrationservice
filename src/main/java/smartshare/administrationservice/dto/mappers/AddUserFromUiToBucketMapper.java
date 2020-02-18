@@ -1,5 +1,6 @@
 package smartshare.administrationservice.dto.mappers;
 
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import smartshare.administrationservice.dto.AddUserFromUiToBucket;
@@ -8,7 +9,9 @@ import smartshare.administrationservice.repository.BucketRepository;
 import smartshare.administrationservice.repository.ObjectAccessRepository;
 import smartshare.administrationservice.repository.UserRepository;
 
-import java.util.Optional;
+import java.util.Collections;
+
+
 
 @Component
 public class AddUserFromUiToBucketMapper implements Mapper {
@@ -17,8 +20,6 @@ public class AddUserFromUiToBucketMapper implements Mapper {
     private UserRepository userRepository;
     private ObjectAccessRepository objectAccessRepository;
 
-    private Optional<Bucket> bucketToWhichUserIsAdded;
-    private UserBucketMapping newUserMapping;
 
 
     @Autowired
@@ -31,24 +32,23 @@ public class AddUserFromUiToBucketMapper implements Mapper {
 
     @Override
     public <T, U> T map(U objectToBeTransformed) {
+
         AddUserFromUiToBucket addUserFromUiToBucket = (AddUserFromUiToBucket) objectToBeTransformed;
-        bucketToWhichUserIsAdded = Optional.ofNullable( bucketRepository.findByName( addUserFromUiToBucket.getBucketName() ) );
-        Optional<User> user = Optional.ofNullable( userRepository.findByUserName( addUserFromUiToBucket.getUserName() ) );
-        if (bucketToWhichUserIsAdded.isPresent() && user.isPresent()) {
-            BucketObject userObjectsCollectionMetadataToBeCreated = new BucketObject( addUserFromUiToBucket.getObjectName(), bucketToWhichUserIsAdded.get(), user.get() );
-            userObjectsCollectionMetadataToBeCreated.addAccessingUser( new AccessingUser( user.get(), userObjectsCollectionMetadataToBeCreated, objectAccessRepository.findByReadAndWriteAndDelete( Boolean.TRUE, Boolean.TRUE, Boolean.TRUE ) ) );
-            bucketToWhichUserIsAdded.get().addBucketObject( userObjectsCollectionMetadataToBeCreated );
-            newUserMapping = new UserBucketMapping( user.get(), bucketToWhichUserIsAdded.get(), new BucketAccess( Boolean.TRUE, Boolean.TRUE ) );
+        Bucket bucketToWhichUserWillBeAdded = bucketRepository.findByName( addUserFromUiToBucket.getBucketName() );
+        User userToBeAdded = userRepository.findByUserName( addUserFromUiToBucket.getUserName() );
+        if (null != bucketToWhichUserWillBeAdded && null != userToBeAdded) {
+            BucketObject newBucketObjectForTheUserBeingAdded =
+                    new BucketObject( addUserFromUiToBucket.getObjectName(), bucketToWhichUserWillBeAdded, userToBeAdded );
+            AccessingUser newAccessingUserEntryForTheNewBucketObjectBeingAdded =
+                    new AccessingUser( userToBeAdded, newBucketObjectForTheUserBeingAdded,
+                            objectAccessRepository.findByReadAndWriteAndDelete( Boolean.TRUE, Boolean.TRUE, Boolean.TRUE ) );
+            newBucketObjectForTheUserBeingAdded.setAccessingUsers( Collections.singletonList( newAccessingUserEntryForTheNewBucketObjectBeingAdded ) );
+            bucketToWhichUserWillBeAdded.setObjects( Collections.singletonList( newBucketObjectForTheUserBeingAdded ) );
+            bucketToWhichUserWillBeAdded.setAccessingUsers( Collections.singletonList( new UserBucketMapping( userToBeAdded, bucketToWhichUserWillBeAdded, new BucketAccess( Boolean.TRUE, Boolean.TRUE ) ) ) );
+            return (T) bucketToWhichUserWillBeAdded;
         }
 
-        return (T) this;
+        return null;
     }
 
-    public Bucket getBucketToWhichUserIsAdded() {
-        return bucketToWhichUserIsAdded.orElse( null );
-    }
-
-    public UserBucketMapping getNewUserMapping() {
-        return newUserMapping;
-    }
 }

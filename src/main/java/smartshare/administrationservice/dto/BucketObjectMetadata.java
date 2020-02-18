@@ -1,5 +1,8 @@
 package smartshare.administrationservice.dto;
 
+import lombok.NoArgsConstructor;
+
+@NoArgsConstructor
 public class BucketObjectMetadata {
 
     private String objectName;
@@ -10,8 +13,6 @@ public class BucketObjectMetadata {
         this.objectMetadata = objectMetadata;
     }
 
-    public BucketObjectMetadata() {
-    }
 
     public String getObjectName() {
         return objectName;

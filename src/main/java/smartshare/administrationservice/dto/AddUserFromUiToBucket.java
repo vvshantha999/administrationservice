@@ -12,7 +12,7 @@ public class AddUserFromUiToBucket {
     public AddUserFromUiToBucket(String userName, String bucketName) {
         this.userName = userName;
         this.bucketName = bucketName;
-        this.objectName = this.bucketName + "/" + this.userName;
+        this.objectName = this.bucketName + "/" + this.userName + "/";
     }
 
     public String getUserName() {

@@ -7,27 +7,30 @@ import javax.persistence.InheritanceType;
 
 @Entity
 @Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
-public
-class BucketAccess {
+public class BucketAccess {
 
 
+    private Boolean read = Boolean.FALSE;
+
+    @Id
+    private Long id;
+    private Boolean write = Boolean.FALSE;
     public BucketAccess(String access) {
         switch (access) {
             case "read":
                 this.read = Boolean.TRUE;
             case "write":
-                this.read = Boolean.TRUE;
+                this.write = Boolean.TRUE;
         }
     }
-
-    @Id
-    private Long id;
-    private Boolean read;
-    private Boolean write;
 
     public BucketAccess(Boolean read, Boolean write) {
         this.read = read;
         this.write = write;
+    }
+
+    public BucketAccess() {
+
     }
 
     public Long getId() {

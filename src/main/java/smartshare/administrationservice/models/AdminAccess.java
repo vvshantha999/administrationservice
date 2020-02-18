@@ -1,11 +1,14 @@
 package smartshare.administrationservice.models;
 
+import lombok.Data;
+
 import javax.persistence.*;
 import java.sql.Date;
 
 @Entity
 @Table(name = "admin_access_given")
-public class AdminAccess {
+public @Data
+class AdminAccess {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -16,23 +19,4 @@ public class AdminAccess {
     private User user;
     private Date createdOn;
 
-    public User getUser() {
-        return user;
-    }
-
-    public void setUser(User user) {
-        this.user = user;
-    }
-
-    public Date getCreatedOn() {
-        return createdOn;
-    }
-
-    public void setCreatedOn(Date createdOn) {
-        this.createdOn = createdOn;
-    }
-
-    public Long getId() {
-        return id;
-    }
 }

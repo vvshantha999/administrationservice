@@ -1,10 +1,13 @@
 package smartshare.administrationservice.models;
 
+import lombok.Data;
+
 import javax.persistence.*;
 import java.io.Serializable;
 
 @Entity
-public class UserBucketMapping implements Serializable {
+public @Data
+class UserBucketMapping implements Serializable {
 
 
     @Id
@@ -23,22 +26,6 @@ public class UserBucketMapping implements Serializable {
         this.user = user;
         this.bucket = bucket;
         this.access = bucketAccess;
-    }
-
-    public User getUser() {
-        return user;
-    }
-
-    public Bucket getBucket() {
-        return bucket;
-    }
-
-    public BucketAccess getAccess() {
-        return access;
-    }
-
-    public void setAccess(BucketAccess access) {
-        this.access = access;
     }
 
 }

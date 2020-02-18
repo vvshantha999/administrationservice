@@ -1,11 +1,13 @@
 package smartshare.administrationservice.models;
 
+import lombok.Data;
 import smartshare.administrationservice.constant.StatusConstants;
 
 import javax.persistence.*;
 
 @Entity
-public class BucketAccessRequest {
+public @Data
+class BucketAccessRequest {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,57 +29,6 @@ public class BucketAccessRequest {
     @JoinColumn(name = "admin_role_id")
     private AdminRole adminRole;
 
-    public Long getId() {
-        return id;
-    }
-
-    public AdminRole getAdminRole() {
-        return adminRole;
-    }
-
-    public void setAdminRole(AdminRole adminRole) {
-        this.adminRole = adminRole;
-    }
-
-    public AdminAccess getAdminAccess() {
-        return adminAccess;
-    }
-
-    public void setAdminAccess(AdminAccess adminAccess) {
-        this.adminAccess = adminAccess;
-    }
-
-    public User getUser() {
-        return user;
-    }
-
-    public void setUser(User user) {
-        this.user = user;
-    }
-
-    public Bucket getBucket() {
-        return bucket;
-    }
-
-    public void setBucket(Bucket bucket) {
-        this.bucket = bucket;
-    }
-
-    public BucketAccess getAccess() {
-        return access;
-    }
-
-    public void setAccess(BucketAccess access) {
-        this.access = access;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
 
     public void approve() {
         this.status = StatusConstants.APPROVED.toString();
@@ -87,16 +38,4 @@ public class BucketAccessRequest {
         this.status = StatusConstants.REJECTED.toString();
     }
 
-    @Override
-    public String toString() {
-        return "BucketAccessRequest{" +
-                "id=" + id +
-                ", adminAccess=" + adminAccess +
-                ", user=" + user +
-                ", bucket=" + bucket +
-                ", access=" + access +
-                ", status='" + status + '\'' +
-                ", adminRole=" + adminRole +
-                '}';
-    }
 }

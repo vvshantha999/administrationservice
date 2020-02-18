@@ -1,14 +1,17 @@
 package smartshare.administrationservice.models;
 
+import lombok.Data;
+
 import javax.persistence.*;
 import java.util.List;
 
 @Entity
-public class AdminRole {
+public @Data
+class AdminRole {
 
     @Id
     @Column(name = "admin_role_id")
-    private Long adminRoleId = Long.valueOf( "0000" );
+    private Long adminRoleId;
 
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "admin_id", referencedColumnName = "id")
@@ -17,24 +20,4 @@ public class AdminRole {
     @OneToMany(mappedBy = "adminAccess")
     private List<BucketAccessRequest> bucketAccessRequestList;
 
-    public AdminAccess getAdminAccess() {
-        return adminAccess;
-    }
-
-    public List<BucketAccessRequest> getBucketAccessRequestList() {
-        return bucketAccessRequestList;
-    }
-
-    public Long getAdminRoleId() {
-        return adminRoleId;
-    }
-
-    @Override
-    public String toString() {
-        return "AdminRole{" +
-                "adminRoleId=" + adminRoleId +
-                ", adminAccess=" + adminAccess +
-                ", bucketAccessRequestList=" + bucketAccessRequestList +
-                '}';
-    }
 }

@@ -87,18 +87,5 @@ public class ObjectAccessRequest {
         return this;
     }
 
-    @Override
-    public String toString() {
-        return "ObjectAccessRequest{" +
-                "id=" + id +
-                ", bucketObject=" + bucketObject +
-                ", owner=" + owner +
-                ", user=" + user +
-                ", access=" + access +
-                ", status='" + status + '\'' +
-                '}';
-    }
-
-
 
 }

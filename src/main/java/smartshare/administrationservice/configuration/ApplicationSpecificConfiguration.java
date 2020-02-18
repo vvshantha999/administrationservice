@@ -18,4 +18,6 @@ public class ApplicationSpecificConfiguration {
     public ObjectMapper objectToJsonConverter() {
         return new ObjectMapper();
     }
+
+
 }

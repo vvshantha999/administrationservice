@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import smartshare.administrationservice.dto.AddUserFromUiToBucket;
 import smartshare.administrationservice.dto.BucketAccessRequestFromUi;
 import smartshare.administrationservice.dto.RemoveUserFromBucket;
@@ -15,8 +16,10 @@ import smartshare.administrationservice.repository.BucketAccessRequestRepository
 import smartshare.administrationservice.repository.BucketRepository;
 import smartshare.administrationservice.repository.UserRepository;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 
 @Slf4j
@@ -46,32 +49,38 @@ public class BucketAccessRequestService {
     }
 
 
+    @Transactional
     public Boolean createBucketAccessRequest(BucketAccessRequestFromUi bucketAccessRequestFromUi) {
         log.info( "Inside createBucketAccessRequest" );
         try {
             BucketAccessRequest newBucketAccessRequest = bucketAccessRequestMapper.map( bucketAccessRequestFromUi );
-            BucketAccessRequest createdBucketAccessRequest = bucketAccessRequestRepository.saveAndFlush( newBucketAccessRequest );
+            BucketAccessRequest createdBucketAccessRequest = bucketAccessRequestRepository.save( newBucketAccessRequest );
             System.out.println( "createdBucketAccessRequest------------->" + createdBucketAccessRequest );
             return Boolean.TRUE;
         } catch (Exception e) {
-            log.error( "Exception while creating bucket Access Request" + e.getMessage() );
+            log.error( "Exception while creating bucket Access Request" + e );
         }
         return Boolean.FALSE;
     }
 
     private Bucket addUserToBucket(Bucket bucketInWhichUserListToBeUpdated, UserBucketMapping userBucketMapping) {
         log.info( "Inside addUserToBucket" );
-        bucketInWhichUserListToBeUpdated.addUser( userBucketMapping );
-        return bucketRepository.saveAndFlush( bucketInWhichUserListToBeUpdated );
+        if ((bucketInWhichUserListToBeUpdated.getAccessingUsers().isEmpty())) {
+            bucketInWhichUserListToBeUpdated.setAccessingUsers( Collections.singletonList( userBucketMapping ) );
+        } else {
+            bucketInWhichUserListToBeUpdated.addUser( userBucketMapping );
+        }
+        return bucketRepository.save( bucketInWhichUserListToBeUpdated );
     }
 
     private Optional<UserBucketMapping> isUserAddedInBucket(Bucket bucket, User user) {
         log.info( "Inside isUserAddedInBucket" );
 
         List<UserBucketMapping> usersInTheBucket = bucket.getAccessingUsers();
-        return usersInTheBucket.stream()
-                .filter( userBucketMapping -> userBucketMapping.getUser().equals( user ) )
-                .findAny();
+        return !usersInTheBucket.isEmpty() ?
+                usersInTheBucket.stream()
+                        .filter( userBucketMapping -> userBucketMapping.getUser().getUserName() == user.getUserName() )
+                        .findAny() : Optional.empty();
 
     }
 
@@ -82,6 +91,7 @@ public class BucketAccessRequestService {
     }
 
     private void approveWriteAccessRequestHandler(BucketAccessRequest bucketAccessRequest) {
+        log.info( "Inside approveWriteAccessRequestHandler" );
         Optional<UserBucketMapping> userExistsInBucket = isUserAddedInBucket( bucketAccessRequest.getBucket(), bucketAccessRequest.getUser() );
         if (userExistsInBucket.isPresent()) {
             addUserToBucket( bucketAccessRequest.getBucket(), giveWritePermissionToTheUserInTheBucket( userExistsInBucket.get() ) );
@@ -119,10 +129,10 @@ public class BucketAccessRequestService {
     }
 
     public Boolean rejectBucketAccessRequest(BucketAccessRequest bucketAccessRequest) {
-        log.info( "Inside approveBucketAccessRequest" );
+        log.info( "Inside rejectBucketAccessRequest" );
         try {
             bucketAccessRequest.reject();
-            bucketAccessRequestRepository.saveAndFlush( bucketAccessRequest );
+            bucketAccessRequestRepository.save( bucketAccessRequest );
             return Boolean.TRUE;
         } catch (Exception e) {
             log.error( "Exception while rejecting the Bucket Access Request" + e.getMessage() );
@@ -132,10 +142,10 @@ public class BucketAccessRequestService {
 
 
     public Boolean addUserToBucketByBucketAdmin(AddUserFromUiToBucket addUserFromUiToBucket) {
-        log.info( "Inside addUserToBucket" );
+        log.info( "Inside addUserToBucketByBucketAdmin" );
         try {
-            AddUserFromUiToBucketMapper mappedResult = addUserFromUiToBucketMapper.map( addUserFromUiToBucket );
-            addUserToBucket( mappedResult.getBucketToWhichUserIsAdded(), mappedResult.getNewUserMapping() );
+            Bucket mappedBucket = addUserFromUiToBucketMapper.map( addUserFromUiToBucket );
+            bucketRepository.save( mappedBucket );
             return Boolean.TRUE;
         } catch (Exception e) {
             log.error( "Exception while adding user to the Bucket by admin" + e.getMessage() );
@@ -143,17 +153,28 @@ public class BucketAccessRequestService {
         return Boolean.FALSE;
     }
 
+    private Boolean doesUserHaveOnlyUserFolderObject(List<BucketObject> bucketObjects, String userName) {
+        List<BucketObject> temp = (bucketObjects.stream()
+                .filter( bucketObject -> bucketObject.getName().contains( userName + "/" ) )
+                .collect( Collectors.toList() ));
+        temp.forEach( System.out::println );
+        System.out.println( bucketObjects.size() );
+        return temp.size() == 1 ? Boolean.TRUE : Boolean.FALSE;
+    }
+
+
     public Status removeUserFromBucketByBucketAdmin(RemoveUserFromBucket removeUserFromBucket) {
         log.info( "Inside removeUserToBucketByBucketAdmin" );
         try {
-            Optional<Bucket> bucketFromWhichUserIsRemoved = Optional.ofNullable( bucketRepository.findByName( removeUserFromBucket.getBucketName() ) );
-            Optional<User> user = Optional.ofNullable( userRepository.findByUserName( removeUserFromBucket.getUserName() ) );
-
-            if (bucketFromWhichUserIsRemoved.isPresent() && user.isPresent()) {
-                Optional<UserBucketMapping> doesUserBucketMappingExists = isUserAddedInBucket( bucketFromWhichUserIsRemoved.get(), user.get() );
-                if (doesUserBucketMappingExists.isPresent() && bucketFromWhichUserIsRemoved.get().getObjects().isEmpty()) {
-                    bucketFromWhichUserIsRemoved.get().removeUser( doesUserBucketMappingExists.get() );
-                    bucketRepository.saveAndFlush( bucketFromWhichUserIsRemoved.get() );// not sure whether it works or not
+            Bucket bucketFromWhichUserIsRemoved = bucketRepository.findByName( removeUserFromBucket.getBucketName() );
+            User user = userRepository.findByUserName( removeUserFromBucket.getUserName() );
+            if (null != bucketFromWhichUserIsRemoved && null != user) {
+                Optional<UserBucketMapping> doesUserBucketMappingExists = isUserAddedInBucket( bucketFromWhichUserIsRemoved, user );
+                Boolean checkExistence = doesUserHaveOnlyUserFolderObject( bucketFromWhichUserIsRemoved.getObjects(), removeUserFromBucket.getUserName() );
+                System.out.println( "checkExistence------->" + checkExistence );
+                if (doesUserBucketMappingExists.isPresent() && checkExistence) {
+                    bucketFromWhichUserIsRemoved.removeUser( doesUserBucketMappingExists.get() );
+                    bucketRepository.save( bucketFromWhichUserIsRemoved );
                     statusOfOperation.setValue( Boolean.TRUE );
                 } else {
                     statusOfOperation.setValue( Boolean.FALSE );
@@ -161,7 +182,7 @@ public class BucketAccessRequestService {
             }
             }
         } catch (Exception e) {
-            log.error( "Exception while removing user from the Bucket by admin" + e.getMessage() );
+            log.error( "Exception while removing user from the Bucket by admin" + e );
             statusOfOperation.setValue( Boolean.FALSE );
         }
         return statusOfOperation;

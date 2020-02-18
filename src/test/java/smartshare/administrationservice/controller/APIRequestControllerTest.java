@@ -54,8 +54,8 @@ class APIRequestControllerTest {
         bucketObjectMetadata.setObjectMetadata( objectMetadata );
         usersMetadataForPermittedBucketObjects.add( bucketObjectMetadata );
 
-        when( apiRequestService.fetchMetaDataForObjectsInGivenBucketForSpecificUser( "file.server.1", "sethuram" ) )
-                .thenReturn( usersMetadataForPermittedBucketObjects );
+//        when( apiRequestService.fetchMetaDataForObjectsInGivenBucketForSpecificUser( "file.server.1", "sethuram" ) )
+//                .thenReturn( usersMetadataForPermittedBucketObjects );
 
         // execute the get request
 

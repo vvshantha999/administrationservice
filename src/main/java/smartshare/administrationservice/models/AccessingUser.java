@@ -40,13 +40,7 @@ public class AccessingUser implements Serializable {
         return access;
     }
 
-
-    @Override
-    public String toString() {
-        return "AccessingUsers{" +
-                "user=" + user +
-                ", bucketObject=" + bucketObject +
-                ", access=" + access +
-                '}';
+    public void setAccess(ObjectAccess access) {
+        this.access = access;
     }
 }

@@ -1,7 +1,9 @@
 package smartshare.administrationservice.models;
 
 import javax.persistence.*;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 
 @Entity
@@ -17,10 +19,10 @@ public class Bucket {
     private AdminRole adminRole;
 
     @OneToMany(mappedBy = "bucket", cascade = CascadeType.ALL) // have to verify mapping
-    private List<BucketObject> objects;
+    private List<BucketObject> objects = new ArrayList<>();
 
     @OneToMany(mappedBy = "bucket", cascade = CascadeType.ALL)
-    private List<UserBucketMapping> accessingUsers;
+    private List<UserBucketMapping> accessingUsers = new ArrayList<>();
 
     public Long getId() {
         return id;
@@ -46,7 +48,6 @@ public class Bucket {
         this.adminRole = adminRole;
     }
 
-
     public List<BucketObject> getObjects() {
         return objects;
     }
@@ -59,12 +60,20 @@ public class Bucket {
         return accessingUsers;
     }
 
-    public void addUser(UserBucketMapping userBucketMapping) {
-        this.accessingUsers.add( userBucketMapping );
+    public void setAccessingUsers(List<UserBucketMapping> accessingUsers) {
+        this.accessingUsers = accessingUsers;
     }
 
-    public void removeUser(UserBucketMapping userBucketMapping) {
-        this.getAccessingUsers().remove( userBucketMapping );
+    public Bucket addUser(UserBucketMapping userBucketMapping) {
+        this.accessingUsers.add( userBucketMapping );
+        return this;
+    }
+
+    public Bucket removeUser(UserBucketMapping userBucketMapping) {
+        this.accessingUsers = this.accessingUsers.stream()
+                .filter( userBucketMapping1 -> !userBucketMapping1.equals( userBucketMapping ) )
+                .collect( Collectors.toList() );
+        return this;
     }
 
     public void addBucketObject(BucketObject bucketObject) {
@@ -75,13 +84,5 @@ public class Bucket {
         this.getObjects().remove( bucketObject );
     }
 
-    @Override
-    public String toString() {
-        return "Bucket{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", adminRole=" + adminRole +
-                ", objects=" + objects +
-                '}';
-    }
+
 }

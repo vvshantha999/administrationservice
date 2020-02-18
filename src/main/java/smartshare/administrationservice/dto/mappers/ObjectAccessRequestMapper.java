@@ -3,6 +3,7 @@ package smartshare.administrationservice.dto.mappers;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import smartshare.administrationservice.constant.StatusConstants;
 import smartshare.administrationservice.dto.ObjectAccessRequestFromUi;
 import smartshare.administrationservice.models.ObjectAccess;
 import smartshare.administrationservice.models.ObjectAccessRequest;
@@ -31,6 +32,7 @@ public class ObjectAccessRequestMapper implements Mapper {
         objectAccessRequest.setOwner( userRepository.findByUserName( objectAccessRequestFromUi.getOwnerName() ) );
         objectAccessRequest.setUser( userRepository.findByUserName( objectAccessRequestFromUi.getUserName() ) );
         objectAccessRequest.setAccess( new ObjectAccess( objectAccessRequestFromUi.getAccess() ) );
+        objectAccessRequest.setStatus( StatusConstants.INPROGRESS.toString() );
         return (T) objectAccessRequest;
     }
 }

@@ -7,6 +7,8 @@ import smartshare.administrationservice.models.*;
 import smartshare.administrationservice.repository.BucketRepository;
 import smartshare.administrationservice.repository.UserRepository;
 
+import java.util.Collections;
+
 
 @Component
 public class BucketObjectMapper implements Mapper {
@@ -28,7 +30,7 @@ public class BucketObjectMapper implements Mapper {
         BucketObject bucketObject = new BucketObject( bucketObjectFromApi.getObjectName(), bucket, bucketObjectOwner );
         AccessingUser newAccessingUser = new AccessingUser( bucketObjectOwner,
                 bucketObject, new ObjectAccess( Boolean.TRUE, Boolean.TRUE, Boolean.TRUE ) );
-        bucketObject.addAccessingUser( newAccessingUser );
+        bucketObject.setAccessingUsers( Collections.singletonList( newAccessingUser ) );
         return (T) bucketObject;
     }
 }

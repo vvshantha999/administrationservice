@@ -75,16 +75,5 @@ public class User {
         return accessingBucket;
     }
 
-    @Override
-    public String toString() {
-        return "User{" +
-                "id=" + id +
-                ", userName='" + userName + '\'' +
-                ", adminFlag='" + adminFlag + '\'' +
-                ", accessingUsers=" + accessingUsers +
-                ", objectAccessRequestsForOwners=" + objectAccessRequestsForOwners +
-                ", objectAccessRequestsForUsers=" + objectAccessRequestsForUsers +
-                ", buckets=" + buckets +
-                '}';
-    }
+
 }

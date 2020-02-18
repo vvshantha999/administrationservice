@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import smartshare.administrationservice.constant.StatusConstants;
 import smartshare.administrationservice.dto.BucketAccessRequestFromUi;
+import smartshare.administrationservice.models.AdminRole;
 import smartshare.administrationservice.models.BucketAccess;
 import smartshare.administrationservice.models.BucketAccessRequest;
 import smartshare.administrationservice.repository.AdminRoleRepository;
@@ -31,8 +32,9 @@ public class BucketAccessRequestMapper implements Mapper {
         newBucketAccessRequest.setBucket( bucketRepository.findByName( bucketAccessRequestFromUi.getBucketName() ) );
         newBucketAccessRequest.setAccess( new BucketAccess( bucketAccessRequestFromUi.getAccess() ) );
         newBucketAccessRequest.setUser( userRepository.findByUserName( bucketAccessRequestFromUi.getUserName() ) );
-        newBucketAccessRequest.setAdminAccess( adminRoleRepository.getOne( Long.valueOf( "0000" ) ).getAdminAccess() );
-        newBucketAccessRequest.setAdminRole( adminRoleRepository.getOne( Long.valueOf( "0000" ) ) );
+        AdminRole adminRole = adminRoleRepository.getOne( Long.valueOf( "0000" ) );
+        newBucketAccessRequest.setAdminAccess( adminRole.getAdminAccess() );
+        newBucketAccessRequest.setAdminRole( adminRole );
         newBucketAccessRequest.setStatus( StatusConstants.INPROGRESS.toString() );
         return (T) newBucketAccessRequest;
     }
