@@ -14,8 +14,8 @@ import smartshare.administrationservice.dto.AccessingUserInfoForApi;
 import smartshare.administrationservice.dto.BucketMetadata;
 import smartshare.administrationservice.dto.BucketObjectMetadata;
 import smartshare.administrationservice.dto.ObjectMetadata;
-import smartshare.administrationservice.models.BucketAccess;
-import smartshare.administrationservice.models.ObjectAccess;
+import smartshare.administrationservice.models.BucketAccessEntity;
+import smartshare.administrationservice.models.ObjectAccessEntity;
 import smartshare.administrationservice.service.APIRequestService;
 
 import java.util.ArrayList;
@@ -38,6 +38,7 @@ class APIRequestControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
+
     @Test
     @DisplayName("GET objects/accessInfo")
     void fetchMetaDataForObjectsInGivenBucketForSpecificUser() throws Exception {
@@ -47,15 +48,15 @@ class APIRequestControllerTest {
         BucketObjectMetadata bucketObjectMetadata = new BucketObjectMetadata();
         ObjectMetadata objectMetadata = new ObjectMetadata();
         objectMetadata.setOwnerName( "Owner" );
-        ObjectAccess objectAccess = new ObjectAccess( false, true, false );
+        ObjectAccessEntity objectAccess = new ObjectAccessEntity( 2, false, true, false );
         AccessingUserInfoForApi accessingUserInfo = new AccessingUserInfoForApi( "sethuram", objectAccess );
         objectMetadata.setAccessingUserInfo( accessingUserInfo );
         bucketObjectMetadata.setObjectName( "Sample1.txt" );
         bucketObjectMetadata.setObjectMetadata( objectMetadata );
         usersMetadataForPermittedBucketObjects.add( bucketObjectMetadata );
 
-//        when( apiRequestService.fetchMetaDataForObjectsInGivenBucketForSpecificUser( "file.server.1", "sethuram" ) )
-//                .thenReturn( usersMetadataForPermittedBucketObjects );
+        when( apiRequestService.fetchBucketObjectsMetaDataByBucketNameAndUserName( "file.server.1", "sethuram" ) )
+                .thenReturn( usersMetadataForPermittedBucketObjects );
 
         // execute the get request
 
@@ -76,19 +77,20 @@ class APIRequestControllerTest {
     void fetchMetaDataForBucketsInS3() throws Exception {
 
         // set up the mock service
-        BucketMetadata bucketMetadata = new BucketMetadata( "file.server.1", "sethuram" );
-        BucketAccess bucketAccess = new BucketAccess( true, false );
-        bucketMetadata.setAccess( bucketAccess );
-        when( apiRequestService.fetchMetaDataForBucketsInS3( "sethuram" ) )
-                .thenReturn( Collections.singletonList( bucketMetadata ) );
+        BucketAccessEntity bucketAccess = new BucketAccessEntity();
+        bucketAccess.setBucketAccessId( 1 );
+        bucketAccess.setRead( true );
+        bucketAccess.setWrite( false );
+        BucketMetadata bucketMetadata = new BucketMetadata( "file.server.1", bucketAccess );
 
+        when( apiRequestService.fetchBucketsMetaDataByUserName( "sethuram" ) )
+                .thenReturn( Collections.singletonList( bucketMetadata ) );
         // execute the get request
 
         mockMvc.perform( get( "/buckets/accessInfo" )
                 .param( "userName", "sethuram" )
         )
                 .andExpect( status().isOk() )
-                .andExpect( jsonPath( "$[0].userName" ).value( "sethuram" ) )
                 .andExpect( jsonPath( "$[0].read" ).value( true ) )
                 .andExpect( jsonPath( "$[0].write" ).value( false ) );
 

@@ -14,12 +14,4 @@ class BucketAccessRequestFromUi {
     private String bucketName;
     private String access;
 
-    @Override
-    public String toString() {
-        return "BucketAccessRequestFromUi{" +
-                "userName='" + userName + '\'' +
-                ", bucketName='" + bucketName + '\'' +
-                ", access='" + access + '\'' +
-                '}';
-    }
 }

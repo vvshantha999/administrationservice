@@ -26,11 +26,11 @@ import org.springframework.kafka.test.EmbeddedKafkaBroker;
 import org.springframework.kafka.test.context.EmbeddedKafka;
 import org.springframework.kafka.test.utils.KafkaTestUtils;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-import smartshare.administrationservice.dto.BucketObjectFromApi;
-import smartshare.administrationservice.models.*;
-import smartshare.administrationservice.repository.BucketObjectRepository;
-import smartshare.administrationservice.repository.BucketRepository;
-import smartshare.administrationservice.repository.UserRepository;
+import smartshare.administrationservice.dto.BucketObjectEvent;
+import smartshare.administrationservice.models.BucketAggregate;
+import smartshare.administrationservice.models.UserAggregate;
+import smartshare.administrationservice.repository.BucketAggregateRepository;
+import smartshare.administrationservice.repository.UserAggregateRepository;
 
 import java.util.*;
 
@@ -50,18 +50,17 @@ import static org.mockito.Mockito.*;
 class BucketObjectEventAdministrationServiceTest {
 
     ObjectWriter objectWriter = new ObjectMapper().writer().withDefaultPrettyPrinter();
-    private Consumer<String, BucketObjectFromApi[]> consumer;
+    private Consumer<String, BucketObjectEvent[]> consumer;
     private Producer<String, String> producer;
     @Autowired
     private KafkaListenerEndpointRegistry kafkaListenerEndpointRegistry;
     @Autowired
     private EmbeddedKafkaBroker embeddedKafkaBroker;
+
     @MockBean
-    private BucketObjectRepository bucketObjectRepository;
+    private UserAggregateRepository userRepository;
     @MockBean
-    private UserRepository userRepository;
-    @MockBean
-    private BucketRepository bucketRepository;
+    private BucketAggregateRepository bucketRepository;
     @Autowired
     private BucketObjectEventAdministrationService bucketObjectEventAdministrationService;
 
@@ -74,7 +73,7 @@ class BucketObjectEventAdministrationServiceTest {
         Map<String, Object> producerConfig = new HashMap<>( KafkaTestUtils.producerProps( embeddedKafkaBroker ) );
         producer = new DefaultKafkaProducerFactory<>( producerConfig, new StringSerializer(), new StringSerializer() ).createProducer();
         Map<String, Object> consumerConfig = new HashMap<>( KafkaTestUtils.consumerProps( "accessManagementObjectConsumer", "false", this.embeddedKafkaBroker ) );
-        consumer = new DefaultKafkaConsumerFactory<>( consumerConfig, new StringDeserializer(), new JsonDeserializer<>( BucketObjectFromApi[].class ) ).createConsumer();
+        consumer = new DefaultKafkaConsumerFactory<>( consumerConfig, new StringDeserializer(), new JsonDeserializer<>( BucketObjectEvent[].class ) ).createConsumer();
         consumer.subscribe( Collections.singletonList( "AccessManagement" ) );
         consumer.poll( 0 );
     }
@@ -91,54 +90,55 @@ class BucketObjectEventAdministrationServiceTest {
     void createAccessDetailForBucketObject() throws JsonProcessingException {
 
 
-        BucketObjectFromApi bucketObjectFromApi = new BucketObjectFromApi();
+        BucketObjectEvent bucketObjectFromApi = new BucketObjectEvent();
         bucketObjectFromApi.setBucketName( "file.server.1" );
         bucketObjectFromApi.setObjectName( "sample.txt" );
         bucketObjectFromApi.setOwnerName( "sethuram" );
         bucketObjectFromApi.setUserName( "ramu" );
 
-        BucketObjectFromApi bucketObjectFromApi2 = new BucketObjectFromApi();
+        BucketObjectEvent bucketObjectFromApi2 = new BucketObjectEvent();
         bucketObjectFromApi2.setBucketName( "file.server.1" );
         bucketObjectFromApi2.setObjectName( "sample2.txt" );
         bucketObjectFromApi2.setOwnerName( "sethuram" );
         bucketObjectFromApi2.setUserName( "ramu" );
 
-        List<BucketObjectFromApi> bucketObjectFromApis = new ArrayList<>();
+        List<BucketObjectEvent> bucketObjectFromApis = new ArrayList<>();
         bucketObjectFromApis.add( bucketObjectFromApi );
         bucketObjectFromApis.add( bucketObjectFromApi2 );
 
-        AdminRole adminRole = new AdminRole();
-        adminRole.setAdminRoleId( 1L );
-        adminRole.setAdminAccess( new AdminAccess() );
 
-        Bucket bucket = new Bucket();
-        bucket.setName( "file.server.1" );
-        bucket.setAdminRole( adminRole );
-        bucket.setId( 1L );
-        BucketObject bucketObject = new BucketObject( "sample.txt", bucket, new User( "sethuram" ) );
-        AccessingUser accessingUser = new AccessingUser( new User( "sethuram" ), bucketObject,
-                new ObjectAccess( true, true, true ) );
-        bucketObject.setAccessingUsers( Collections.singletonList( accessingUser ) );
+        BucketAggregate bucket = new BucketAggregate();
+        bucket.setBucketName( "file.server.1" );
+        bucket.setAdminId( 1 );
+        bucket.setBucketId( 1 );
 
-        System.out.println( "bucketObjectFromApis---" + bucketObjectFromApis );
+        UserAggregate user = new UserAggregate();
+        user.setUserId( 1 );
+        user.setUserName( "sethu" );
+
+        bucket.addBucketAccessingUsers( 1, 3 );
+
 
         // Act
         producer.send( new ProducerRecord<>( "AccessManagement", "emptyBucketObject", objectWriter.writeValueAsString( bucketObjectFromApis ) ) );
 
         // Assert
-        ConsumerRecord<String, BucketObjectFromApi[]> singleRecord = KafkaTestUtils.getSingleRecord( consumer, "AccessManagement" );
+        ConsumerRecord<String, BucketObjectEvent[]> singleRecord = KafkaTestUtils.getSingleRecord( consumer, "AccessManagement" );
         assertNotNull( singleRecord );
         assertEquals( singleRecord.key(), "emptyBucketObject" );
         assertEquals( singleRecord.value().length, 2 );
 
-        when( bucketObjectRepository.save( any() ) ).thenReturn( bucketObject );
-        when( userRepository.findByUserName( any() ) ).thenReturn( new User( "sethuram" ) );
-        when( bucketRepository.findByName( any() ) ).thenReturn( bucket );
+
+        when( bucketRepository.save( any() ) ).thenReturn( bucket );
+        when( userRepository.findByUserName( any() ) ).thenReturn( user );
+        when( bucketRepository.findByBucketName( any() ) ).thenReturn( bucket );
+
 
         bucketObjectEventAdministrationService.createAccessDetailForBucketObject( singleRecord.value()[0] );
-        verify( bucketObjectRepository ).save( any() );
         verify( userRepository ).findByUserName( any() );
-        verify( bucketRepository ).findByName( any() );
+        verify( bucketRepository ).findByBucketName( any() );
+        verify( bucketRepository ).save( any() );
+
 
     }
 
@@ -147,54 +147,55 @@ class BucketObjectEventAdministrationServiceTest {
     void createAccessDetailForUploadedBucketObjects() throws JsonProcessingException {
 
 
-        BucketObjectFromApi bucketObjectFromApi = new BucketObjectFromApi();
+        BucketObjectEvent bucketObjectFromApi = new BucketObjectEvent();
         bucketObjectFromApi.setBucketName( "file.server.1" );
         bucketObjectFromApi.setObjectName( "sample.txt" );
         bucketObjectFromApi.setOwnerName( "sethuram" );
         bucketObjectFromApi.setUserName( "ramu" );
 
-        BucketObjectFromApi bucketObjectFromApi2 = new BucketObjectFromApi();
+        BucketObjectEvent bucketObjectFromApi2 = new BucketObjectEvent();
         bucketObjectFromApi2.setBucketName( "file.server.1" );
         bucketObjectFromApi2.setObjectName( "sample2.txt" );
         bucketObjectFromApi2.setOwnerName( "sethuram" );
         bucketObjectFromApi2.setUserName( "ramu" );
 
-        List<BucketObjectFromApi> bucketObjectFromApis = new ArrayList<>();
+        List<BucketObjectEvent> bucketObjectFromApis = new ArrayList<>();
         bucketObjectFromApis.add( bucketObjectFromApi );
         bucketObjectFromApis.add( bucketObjectFromApi2 );
 
-        AdminRole adminRole = new AdminRole();
-        adminRole.setAdminRoleId( 1L );
-        adminRole.setAdminAccess( new AdminAccess() );
 
-        Bucket bucket = new Bucket();
-        bucket.setName( "file.server.1" );
-        bucket.setAdminRole( adminRole );
-        bucket.setId( 1L );
-        BucketObject bucketObject = new BucketObject( "sample.txt", bucket, new User( "sethuram" ) );
-        AccessingUser accessingUser = new AccessingUser( new User( "sethuram" ), bucketObject,
-                new ObjectAccess( true, true, true ) );
-        bucketObject.setAccessingUsers( Collections.singletonList( accessingUser ) );
+        BucketAggregate bucket = new BucketAggregate();
+        bucket.setBucketName( "file.server.1" );
+        bucket.setAdminId( 1 );
+        bucket.setBucketId( 1 );
 
-        System.out.println( "bucketObjectFromApis---" + bucketObjectFromApis );
+        UserAggregate user = new UserAggregate();
+        user.setUserId( 1 );
+        user.setUserName( "sethu" );
+
+        bucket.addBucketAccessingUsers( 1, 3 );
+
 
         // Act
         producer.send( new ProducerRecord<>( "AccessManagement", "uploadBucketObjects", objectWriter.writeValueAsString( bucketObjectFromApis ) ) );
 
         // Assert
-        ConsumerRecord<String, BucketObjectFromApi[]> singleRecord = KafkaTestUtils.getSingleRecord( consumer, "AccessManagement" );
+        ConsumerRecord<String, BucketObjectEvent[]> singleRecord = KafkaTestUtils.getSingleRecord( consumer, "AccessManagement" );
         assertNotNull( singleRecord );
         assertEquals( singleRecord.key(), "uploadBucketObjects" );
         assertEquals( singleRecord.value().length, 2 );
 
-        when( bucketObjectRepository.save( any() ) ).thenReturn( bucketObject );
-        when( userRepository.findByUserName( any() ) ).thenReturn( new User( "sethuram" ) );
-        when( bucketRepository.findByName( any() ) ).thenReturn( bucket );
+
+        when( bucketRepository.save( any() ) ).thenReturn( bucket );
+        when( userRepository.findByUserName( any() ) ).thenReturn( user );
+        when( bucketRepository.findByBucketName( any() ) ).thenReturn( bucket );
+
 
         bucketObjectEventAdministrationService.createAccessDetailForUploadedBucketObjects( Arrays.asList( singleRecord.value() ) );
-        verify( bucketObjectRepository, times( 2 ) ).save( any() );
         verify( userRepository, times( 2 ) ).findByUserName( any() );
-        verify( bucketRepository, times( 2 ) ).findByName( any() );
+        verify( bucketRepository, times( 2 ) ).findByBucketName( any() );
+        verify( bucketRepository, times( 2 ) ).save( any() );
+
 
     }
 
@@ -203,34 +204,36 @@ class BucketObjectEventAdministrationServiceTest {
     void deleteBucketObject() throws JsonProcessingException {
 
 
-        BucketObjectFromApi bucketObjectFromApi = new BucketObjectFromApi();
+        BucketObjectEvent bucketObjectFromApi = new BucketObjectEvent();
         bucketObjectFromApi.setBucketName( "file.server.1" );
         bucketObjectFromApi.setObjectName( "sample.txt" );
         bucketObjectFromApi.setOwnerName( "sethuram" );
         bucketObjectFromApi.setUserName( "ramu" );
 
-        BucketObjectFromApi bucketObjectFromApi2 = new BucketObjectFromApi();
+        BucketObjectEvent bucketObjectFromApi2 = new BucketObjectEvent();
         bucketObjectFromApi2.setBucketName( "file.server.1" );
         bucketObjectFromApi2.setObjectName( "sample2.txt" );
         bucketObjectFromApi2.setOwnerName( "sethuram" );
         bucketObjectFromApi2.setUserName( "ramu" );
 
-        List<BucketObjectFromApi> bucketObjectFromApis = new ArrayList<>();
+        List<BucketObjectEvent> bucketObjectFromApis = new ArrayList<>();
         bucketObjectFromApis.add( bucketObjectFromApi );
         bucketObjectFromApis.add( bucketObjectFromApi2 );
 
-        AdminRole adminRole = new AdminRole();
-        adminRole.setAdminRoleId( 1L );
-        adminRole.setAdminAccess( new AdminAccess() );
 
-        Bucket bucket = new Bucket();
-        bucket.setName( "file.server.1" );
-        bucket.setAdminRole( adminRole );
-        bucket.setId( 1L );
-        BucketObject bucketObject = new BucketObject( "sample.txt", bucket, new User( "sethuram" ) );
-        AccessingUser accessingUser = new AccessingUser( new User( "sethuram" ), bucketObject,
-                new ObjectAccess( true, true, true ) );
-        bucketObject.setAccessingUsers( Collections.singletonList( accessingUser ) );
+        BucketAggregate bucket = new BucketAggregate();
+        bucket.setBucketName( "file.server.1" );
+        bucket.setAdminId( 1 );
+        bucket.setBucketId( 1 );
+
+        UserAggregate user = new UserAggregate();
+        user.setUserId( 1 );
+        user.setUserName( "sethu" );
+
+        bucket.addBucketObject( "sample.txt", 1 );
+        bucket.addBucketObject( "sample2.txt", 1 );
+        bucket.addBucketAccessingUsers( 1, 3 );
+
 
         System.out.println( "bucketObjectFromApis---" + bucketObjectFromApis );
 
@@ -238,16 +241,19 @@ class BucketObjectEventAdministrationServiceTest {
         producer.send( new ProducerRecord<>( "AccessManagement", "deleteBucketObjects", objectWriter.writeValueAsString( bucketObjectFromApis ) ) );
 
         // Assert
-        ConsumerRecord<String, BucketObjectFromApi[]> singleRecord = KafkaTestUtils.getSingleRecord( consumer, "AccessManagement" );
+        ConsumerRecord<String, BucketObjectEvent[]> singleRecord = KafkaTestUtils.getSingleRecord( consumer, "AccessManagement" );
         assertNotNull( singleRecord );
         assertEquals( singleRecord.key(), "deleteBucketObjects" );
         assertEquals( singleRecord.value().length, 2 );
 
-        when( bucketObjectRepository.findByNameAndBucket_Name( any(), any() ) ).thenReturn( bucketObject );
+        when( bucketRepository.save( any() ) ).thenReturn( bucket );
+        when( userRepository.findByUserName( any() ) ).thenReturn( user );
+        when( bucketRepository.findByBucketName( any() ) ).thenReturn( bucket );
 
         bucketObjectEventAdministrationService.deleteBucketObjects( Arrays.asList( singleRecord.value() ) );
-        verify( bucketObjectRepository, times( 2 ) ).findByNameAndBucket_Name( any(), any() );
-        verify( bucketObjectRepository, times( 2 ) ).delete( any() );
+        verify( userRepository, times( 2 ) ).findByUserName( any() );
+        verify( bucketRepository, times( 2 ) ).findByBucketName( any() );
+        verify( bucketRepository, times( 2 ) ).save( any() );
 
     }
 

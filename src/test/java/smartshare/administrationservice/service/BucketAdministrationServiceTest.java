@@ -23,9 +23,11 @@ import org.springframework.kafka.test.EmbeddedKafkaBroker;
 import org.springframework.kafka.test.context.EmbeddedKafka;
 import org.springframework.kafka.test.utils.KafkaTestUtils;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-import smartshare.administrationservice.models.*;
-import smartshare.administrationservice.repository.AdminRoleRepository;
-import smartshare.administrationservice.repository.BucketRepository;
+import smartshare.administrationservice.dto.Status;
+import smartshare.administrationservice.models.AdminRoleAggregate;
+import smartshare.administrationservice.models.BucketAggregate;
+import smartshare.administrationservice.repository.AdminRoleAggregateRepository;
+import smartshare.administrationservice.repository.BucketAggregateRepository;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -57,10 +59,10 @@ class BucketAdministrationServiceTest {
     private EmbeddedKafkaBroker embeddedKafkaBroker;
 
     @MockBean
-    private BucketRepository bucketRepository;
+    private BucketAggregateRepository bucketRepository;
 
     @MockBean
-    private AdminRoleRepository adminRoleRepository;
+    private AdminRoleAggregateRepository adminRoleRepository;
 
     @Autowired
     private BucketAdministrationService bucketAdministrationService;
@@ -87,8 +89,8 @@ class BucketAdministrationServiceTest {
     }
 
     @Test
-    @DisplayName("TEST createBucketInAccessManagementDb - SUCCESS")
-    void createBucketInAccessManagementDb() {
+    @DisplayName("TEST createBucket - SUCCESS")
+    void createBucket() {
 
 
         // Act
@@ -102,27 +104,27 @@ class BucketAdministrationServiceTest {
 
         // mock
 
-        AdminRole adminRole = new AdminRole();
-        adminRole.setAdminRoleId( 1L );
-        adminRole.setAdminAccess( new AdminAccess() );
+        AdminRoleAggregate adminRole = new AdminRoleAggregate();
+        adminRole.setAdminId( 1 );
 
-        Bucket bucket = new Bucket();
-        bucket.setName( "file.server.1" );
-        bucket.setAdminRole( adminRole );
-        bucket.setId( 1L );
+
+        BucketAggregate bucket = new BucketAggregate();
+        bucket.setBucketName( "file.server.1" );
+        bucket.setAdminId( 1 );
+        bucket.setBucketId( 1 );
 
         when( bucketRepository.save( any() ) ).thenReturn( bucket );
-        when( adminRoleRepository.getOne( any() ) ).thenReturn( adminRole );
+        when( adminRoleRepository.findFirstByOrderByAdminIdDesc() ).thenReturn( java.util.Optional.of( adminRole ) );
 
-        Bucket result = bucketAdministrationService.createBucketInAccessManagementDb( singleRecord.value() );
+        BucketAggregate result = bucketAdministrationService.createBucket( singleRecord.value() );
         verify( bucketRepository ).save( any() );
 
 
     }
 
     @Test
-    @DisplayName("TEST deleteBucketInAccessManagementDb - without bucket objects - SUCCESS")
-    void deleteBucketInAccessManagementDb_without_bucket_objects() {
+    @DisplayName("TEST deleteBucket - without bucket objects - SUCCESS")
+    void deleteBucket_without_bucket_objects() {
 
         // Act
         producer.send( new ProducerRecord<>( "AccessManagement", "deleteBucket", "file.server.1" ) );
@@ -135,26 +137,26 @@ class BucketAdministrationServiceTest {
 
         // mock
 
-        AdminRole adminRole = new AdminRole();
-        adminRole.setAdminRoleId( 1L );
-        adminRole.setAdminAccess( new AdminAccess() );
+        AdminRoleAggregate adminRole = new AdminRoleAggregate();
+        adminRole.setAdminId( 1 );
 
-        Bucket bucket = new Bucket();
-        bucket.setName( "file.server.1" );
-        bucket.setAdminRole( adminRole );
-        bucket.setId( 1L );
 
-        when( bucketRepository.findByName( any() ) ).thenReturn( bucket );
+        BucketAggregate bucket = new BucketAggregate();
+        bucket.setBucketName( "file.server.1" );
+        bucket.setAdminId( 1 );
+        bucket.setBucketId( 1 );
 
-        Status result = bucketAdministrationService.deleteBucketInAccessManagementDb( singleRecord.value() );
+        when( bucketRepository.findByBucketName( any() ) ).thenReturn( bucket );
+
+        Status result = bucketAdministrationService.deleteBucket( singleRecord.value() );
         assertEquals( result.getValue(), true );
         verify( bucketRepository ).delete( any() );
     }
 
 
     @Test
-    @DisplayName("TEST deleteBucketInAccessManagementDb - with bucket objects- SUCCESS")
-    void deleteBucketInAccessManagementDb_with_bucket_objects() {
+    @DisplayName("TEST deleteBucket - with bucket objects- SUCCESS")
+    void deleteBucket() {
 
         // Act
         producer.send( new ProducerRecord<>( "AccessManagement", "deleteBucket", "file.server.1" ) );
@@ -167,27 +169,26 @@ class BucketAdministrationServiceTest {
 
         // mock
 
-        AdminRole adminRole = new AdminRole();
-        adminRole.setAdminRoleId( 1L );
-        adminRole.setAdminAccess( new AdminAccess() );
-
-        Bucket bucket = new Bucket();
-        bucket.setName( "file.server.1" );
-        bucket.setAdminRole( adminRole );
-        bucket.setId( 1L );
-        BucketObject bucketObject = new BucketObject( "file.server.1/sethuram/", bucket, new User( "sethuram" ) );
-        AccessingUser accessingUser = new AccessingUser( new User( "sethuram" ), bucketObject,
-                new ObjectAccess( true, true, true ) );
-        bucketObject.setAccessingUsers( Collections.singletonList( accessingUser ) );
-        bucket.setObjects( Collections.singletonList( bucketObject ) );
+        AdminRoleAggregate adminRole = new AdminRoleAggregate();
+        adminRole.setAdminId( 1 );
 
 
-        when( bucketRepository.findByName( any() ) ).thenReturn( bucket );
+        BucketAggregate bucket = new BucketAggregate();
+        bucket.setBucketName( "file.server.1" );
+        bucket.setAdminId( 1 );
+        bucket.setBucketId( 1 );
 
-        Status result = bucketAdministrationService.deleteBucketInAccessManagementDb( singleRecord.value() );
+        bucket.addBucketObject( "file.server.1/sethuram/", 1 );
+        bucket.addBucketObject( "file.server.1/sethuram/sample.txt", 1 );
+
+
+        when( bucketRepository.findByBucketName( any() ) ).thenReturn( bucket );
+
+        Status result = bucketAdministrationService.deleteBucket( singleRecord.value() );
         assertEquals( result.getValue(), false );
         assertEquals( result.getReasonForFailure(), "Please delete Bucket Objects before deleting the bucket" );
-        verify( bucketRepository ).findByName( any() );
+        verify( bucketRepository ).findByBucketName( any() );
+
     }
 
 }

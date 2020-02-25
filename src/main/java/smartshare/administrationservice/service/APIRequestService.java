@@ -8,13 +8,15 @@ import smartshare.administrationservice.dto.AccessingUserInfoForApi;
 import smartshare.administrationservice.dto.BucketMetadata;
 import smartshare.administrationservice.dto.BucketObjectMetadata;
 import smartshare.administrationservice.dto.ObjectMetadata;
-import smartshare.administrationservice.models.Bucket;
-import smartshare.administrationservice.models.BucketObject;
-import smartshare.administrationservice.models.UserBucketMapping;
-import smartshare.administrationservice.repository.BucketRepository;
+import smartshare.administrationservice.models.*;
+import smartshare.administrationservice.repository.BucketAccessEntityRepository;
+import smartshare.administrationservice.repository.BucketAggregateRepository;
+import smartshare.administrationservice.repository.ObjectAccessEntityRepository;
+import smartshare.administrationservice.repository.UserAggregateRepository;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -24,61 +26,82 @@ import java.util.stream.Collectors;
 public class APIRequestService {
 
 
-    private BucketRepository bucketRepository;
+    private BucketAggregateRepository bucketAggregateRepository;
+    private UserAggregateRepository userAggregateRepository;
+    private ObjectAccessEntityRepository objectAccessEntityRepository;
+    private BucketAccessEntityRepository bucketAccessEntityRepository;
 
     @Autowired
-    public APIRequestService(BucketRepository bucketRepository) {
-        this.bucketRepository = bucketRepository;
+    public APIRequestService(
+
+            BucketAggregateRepository bucketAggregateRepository,
+            UserAggregateRepository userAggregateRepository,
+            ObjectAccessEntityRepository objectAccessEntityRepository,
+            BucketAccessEntityRepository bucketAccessEntityRepository) {
+        this.bucketAggregateRepository = bucketAggregateRepository;
+        this.userAggregateRepository = userAggregateRepository;
+        this.objectAccessEntityRepository = objectAccessEntityRepository;
+        this.bucketAccessEntityRepository = bucketAccessEntityRepository;
     }
 
-    private BucketObjectMetadata dataFormatterForFetchMetaDataForObjectsInS3(BucketObject bucketObject, String userName) {
-        log.info( "Inside dataFormatterForFetchMetaDataForObjectsInS3" );
-        ObjectMetadata objectMetadata = new ObjectMetadata();
-        objectMetadata.setOwnerName( bucketObject.getOwner().getUserName() );
-        bucketObject.getAccessingUsers().stream()
-                .filter( accessingUser -> accessingUser.getUser().getUserName().equals( userName ) )
-                .findFirst()
-                .ifPresent( accessingUser -> objectMetadata.setAccessingUserInfo( new AccessingUserInfoForApi( userName, accessingUser.getAccess() ) ) );
-        return new BucketObjectMetadata( bucketObject.getName(), objectMetadata );
 
+    private BucketObjectMetadata mapToReadModel(BucketObjectAggregate bucketObject, UserAggregate user) {
+        log.info( "Inside mapToReadModel" );
+        BucketObjectMetadata bucketObjectMetadata = null;
+        Optional<UserAggregate> owner = userAggregateRepository.findById( bucketObject.getOwnerId() );
+        Optional<BucketObjectAccessingUser> accessingUser = bucketObject.getAccessingUsers().stream()
+                .filter( bucketObjectAccessingUser -> bucketObjectAccessingUser.getUserId() == user.getUserId() )
+                .findFirst();
+        if (accessingUser.isPresent() && owner.isPresent()) {
+            ObjectMetadata objectMetadata = new ObjectMetadata();
+            objectMetadata.setOwnerName( owner.get().getUserName() );
+            ObjectAccessEntity accessInfo = objectAccessEntityRepository.findById( accessingUser.get().getObjectAccessId() )
+                    .orElseGet( () -> objectAccessEntityRepository.findByReadAndWriteAndDelete( false, false, false ) );
+            objectMetadata.setAccessingUserInfo( new AccessingUserInfoForApi( user.getUserName(), accessInfo ) );
+            bucketObjectMetadata = new BucketObjectMetadata( bucketObject.getBucketObjectName(), objectMetadata );
+        }
+        return bucketObjectMetadata;
     }
 
-    public List<BucketObjectMetadata> fetchMetaDataForObjectsInGivenBucketForSpecificUser(String bucketName, String userName) {
-        log.info( "Inside fetchMetaDataForObjectsInS3 service layer" );
+
+    public List<BucketObjectMetadata> fetchBucketObjectsMetaDataByBucketNameAndUserName(String bucketName, String userName) {
+        log.info( "Inside fetchBucketObjectsMetaDataByBucketAndUser" );
         try {
-            Bucket bucket = bucketRepository.findByName( bucketName );
-            List<BucketObject> bucketObjects = bucket.getObjects();
-            if (null != bucketObjects) {
-                return bucket.getObjects().stream()
-                        .map( bucketObject -> dataFormatterForFetchMetaDataForObjectsInS3( bucketObject, userName ) )
-                        .sorted( Comparator.comparing( BucketObjectMetadata::getObjectName ) )
-                        .collect( Collectors.toList() );
-            }
+            BucketAggregate bucket = Objects.requireNonNull( bucketAggregateRepository.findByBucketName( bucketName ) );
+            UserAggregate user = Objects.requireNonNull( userAggregateRepository.findByUserName( userName ) );
+            return bucket.getBucketObjects().stream()
+                    .map( bucketObjectAggregate -> mapToReadModel( bucketObjectAggregate, user ) )
+                    .filter( Objects::nonNull )
+                    .sorted( Comparator.comparing( BucketObjectMetadata::getObjectName ) )
+                    .collect( Collectors.toList() );
         } catch (Exception e) {
             log.error( "Exception inside fetchMetaDataForObjectsInS3 service layer ", e );
         }
-
         return null;
     }
 
-    private Optional<BucketMetadata> extractBucketMetadata(Bucket bucket, String userName) {
+
+    private BucketMetadata extractBucketMetadata(BucketAggregate bucket, int userId) {
         log.info( "Inside extractBucketMetadata" );
-        List<UserBucketMapping> accessingUsers = bucket.getAccessingUsers();
-        if (accessingUsers != null)
-            return accessingUsers.stream()
-                    .filter( userBucketMapping -> userBucketMapping.getUser().getUserName().equals( userName ) )
-                    .findFirst()
-                    .map( userBucketMapping -> new BucketMetadata( bucket.getName(), userName, userBucketMapping.getAccess() ) );
-        return Optional.empty();
+        BucketMetadata bucketMetadata = null;
+        Optional<BucketAccessingUser> accessingUser = bucket.getBucketAccessingUsers().stream()
+                .filter( bucketAccessingUser -> bucketAccessingUser.getUserId() == userId )
+                .findFirst();
+        if (accessingUser.isPresent()) {
+            BucketAccessEntity accessInfo = bucketAccessEntityRepository.findById( accessingUser.get().getBucketAccessId() )
+                    .orElseGet( () -> bucketAccessEntityRepository.findByReadAndWrite( false, false ) );
+            bucketMetadata = new BucketMetadata( bucket.getBucketName(), accessInfo );
+        }
+        return bucketMetadata;
     }
 
-    public List<BucketMetadata> fetchMetaDataForBucketsInS3(String userName) {
+    public List<BucketMetadata> fetchBucketsMetaDataByUserName(String userName) {
         log.info( "Inside fetchMetaDataForBucketsInS3" );
         try {
-            return bucketRepository.findAll().stream()
-                    .map( bucket -> extractBucketMetadata( bucket, userName ) )
-                    .filter( Optional::isPresent )
-                    .map( Optional::get )
+            UserAggregate user = Objects.requireNonNull( userAggregateRepository.findByUserName( userName ) );
+            return bucketAggregateRepository.findAll().stream()
+                    .map( bucket -> extractBucketMetadata( bucket, user.getUserId() ) )
+                    .filter( Objects::nonNull )
                     .collect( Collectors.toList() );
         } catch (Exception e) {
             log.error( "Exception inside fetchMetaDataForBucketsInS3  ", e );

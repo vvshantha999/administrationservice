@@ -9,25 +9,29 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import smartshare.administrationservice.dto.BucketMetadata;
 import smartshare.administrationservice.dto.BucketObjectMetadata;
-import smartshare.administrationservice.models.*;
-import smartshare.administrationservice.repository.BucketRepository;
+import smartshare.administrationservice.models.BucketAggregate;
+import smartshare.administrationservice.models.BucketObjectAggregate;
+import smartshare.administrationservice.models.UserAggregate;
+import smartshare.administrationservice.repository.BucketAggregateRepository;
+import smartshare.administrationservice.repository.UserAggregateRepository;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest
 class APIRequestServiceTest {
 
     @MockBean
-    private BucketRepository bucketRepository;
+    private BucketAggregateRepository bucketRepository;
+
+    @MockBean
+    private UserAggregateRepository userAggregateRepository;
 
     @Autowired
     private APIRequestService apiRequestService;
@@ -39,56 +43,66 @@ class APIRequestServiceTest {
 
         //setup mock ( if needed verify the mock)
 
-        Bucket bucket = new Bucket();
-        bucket.setName( "file.server.1" );
-        bucket.setAdminRole( new AdminRole() );
-        bucket.setId( 1L );
+        BucketAggregate bucket = new BucketAggregate();
+        bucket.setBucketName( "file.server.1" );
+        bucket.setAdminId( 1 );
+        bucket.setBucketId( 2 );
 
-        BucketObject bucketObject = new BucketObject( "sample.txt", bucket, new User( "sethuram" ) );
-        ObjectAccess objectAccess = new ObjectAccess( false, true, false );
-        AccessingUser accessingUser = new AccessingUser( new User( "sethuram" ), bucketObject, objectAccess );
-        bucketObject.setAccessingUsers( Collections.singletonList( accessingUser ) );
 
-        BucketObject bucketObject1 = new BucketObject( "sample1.txt", bucket, new User( "sethuram" ) );
-        ObjectAccess objectAccess1 = new ObjectAccess( true, true, false );
-        AccessingUser accessingUser1 = new AccessingUser( new User( "sethuram" ), bucketObject1, objectAccess1 );
-        bucketObject1.setAccessingUsers( Collections.singletonList( accessingUser1 ) );
+        BucketObjectAggregate bucketObject = new BucketObjectAggregate( "sample.txt", bucket, 2 );
+        bucketObject.addAccessingUser( 3, 4 );
 
-        BucketObject bucketObject2 = new BucketObject( "sample2.txt", bucket, new User( "sethuram" ) );
-        ObjectAccess objectAccess2 = new ObjectAccess( true, false, false );
-        AccessingUser accessingUser2 = new AccessingUser( new User( "sethuram" ), bucketObject2, objectAccess2 );
-        bucketObject2.setAccessingUsers( Collections.singletonList( accessingUser2 ) );
+        BucketObjectAggregate bucketObject1 = new BucketObjectAggregate( "sample1.txt", bucket, 2 );
+        bucketObject1.addAccessingUser( 3, 4 );
 
-        List<BucketObject> bucketObjects = new ArrayList<>();
+        BucketObjectAggregate bucketObject2 = new BucketObjectAggregate( "sample2.txt", bucket, 2 );
+        bucketObject2.addAccessingUser( 3, 4 );
+
+
+        Set<BucketObjectAggregate> bucketObjects = new HashSet<>();
         bucketObjects.add( bucketObject );
         bucketObjects.add( bucketObject1 );
         bucketObjects.add( bucketObject2 );
 
-        bucket.setObjects( bucketObjects );
+        bucket.setBucketObjects( bucketObjects );
+        UserAggregate user = new UserAggregate();
+        user.setUserId( 3 );
+        user.setUserName( "sethu" );
 
-        when( bucketRepository.findByName( anyString() ) ).thenReturn( bucket );
+
+        when( bucketRepository.findByBucketName( anyString() ) ).thenReturn( bucket );
+        when( userAggregateRepository.findByUserName( any() ) ).thenReturn( user );
+        when( userAggregateRepository.findById( any() ) ).thenReturn( Optional.of( user ) );
 
         // execute the call
-        List<BucketObjectMetadata> result = apiRequestService.fetchMetaDataForObjectsInGivenBucketForSpecificUser( "file.server.1", "sethuram" );
+        List<BucketObjectMetadata> result = apiRequestService.fetchBucketObjectsMetaDataByBucketNameAndUserName( "file.server.1", "sethu" );
 
         // assert  the results
         assertAll(
                 () -> assertEquals( result.get( 0 ).getObjectName(), "sample.txt" ),
-                () -> assertEquals( result.get( 0 ).getObjectMetadata().getOwnerName(), "sethuram" ),
+                () -> assertEquals( result.get( 0 ).getObjectMetadata().getOwnerName(), "sethu" ),
                 () -> assertEquals( result.get( 0 ).getObjectMetadata().getAccessingUserInfo().getRead(), false )
         );
-        verify( bucketRepository ).findByName( anyString() );
+        verify( bucketRepository ).findByBucketName( anyString() );
+        verify( userAggregateRepository ).findByUserName( anyString() );
+        verify( userAggregateRepository, times( 3 ) ).findById( any() );
 
     }
 
     @Test
     @DisplayName("TEST fetchMetaDataForBucketsInS3 - EMPTY FIND ALL RESULT")
     void fetchMetaDataForBucketsInS3_empty_find_all() {
+        UserAggregate user = new UserAggregate();
+        user.setUserId( 1 );
+        user.setUserName( "sethu" );
+
+
         //setup mock ( if needed verify the mock)
         when( bucketRepository.findAll() ).thenReturn( Collections.EMPTY_LIST );
+        when( userAggregateRepository.findByUserName( any() ) ).thenReturn( user );
 
         // execute the call
-        List<BucketMetadata> result = apiRequestService.fetchMetaDataForBucketsInS3( "sethuram" );
+        List<BucketMetadata> result = apiRequestService.fetchBucketsMetaDataByUserName( "sethuram" );
         assertEquals( result, Collections.EMPTY_LIST );
         verify( bucketRepository ).findAll();
     }
@@ -99,36 +113,42 @@ class APIRequestServiceTest {
     void fetchMetaDataForBucketsInS3() {
         //setup mock ( if needed verify the mock)
 
-        Bucket bucket1 = new Bucket();
-        bucket1.setName( "file.server.1" );
-        bucket1.setAdminRole( new AdminRole() );
-        bucket1.setId( 1L );
-        User user = new User( "sethuram" );
-        UserBucketMapping userBucketMapping = new UserBucketMapping( user, bucket1, new BucketAccess( true, true ) );
-        bucket1.setAccessingUsers( Collections.singletonList( userBucketMapping ) );
+        BucketAggregate bucket = new BucketAggregate();
+        bucket.setBucketName( "file.server.1" );
+        bucket.setAdminId( 1 );
+        bucket.setBucketId( 1 );
 
-        Bucket bucket2 = new Bucket();
-        bucket2.setName( "file.server.2" );
-        bucket2.setAdminRole( new AdminRole() );
-        bucket2.setId( 2L );
-        UserBucketMapping userBucketMapping2 = new UserBucketMapping( user, bucket1, new BucketAccess( false, true ) );
-        bucket2.setAccessingUsers( Collections.singletonList( userBucketMapping2 ) );
+        UserAggregate user = new UserAggregate();
+        user.setUserId( 1 );
+        user.setUserName( "sethu" );
 
-        Bucket bucket3 = new Bucket();
-        bucket3.setName( "file.server.3" );
-        bucket3.setAdminRole( new AdminRole() );
-        bucket3.setId( 3L );
-        bucket3.setAccessingUsers( Collections.singletonList( userBucketMapping ) );
+        bucket.addBucketAccessingUsers( 1, 3 );
 
-        List<Bucket> buckets = new ArrayList<>();
-        buckets.add( bucket1 );
+
+        BucketAggregate bucket2 = new BucketAggregate();
+        bucket2.setBucketName( "file.server.2" );
+        bucket2.setAdminId( 1 );
+        bucket2.setBucketId( 2 );
+
+        bucket2.addBucketAccessingUsers( 1, 2 );
+
+        BucketAggregate bucket3 = new BucketAggregate();
+        bucket3.setBucketName( "file.server.3" );
+        bucket3.setAdminId( 1 );
+        bucket3.setBucketId( 3 );
+
+        bucket3.addBucketAccessingUsers( 1, 4 );
+
+        List<BucketAggregate> buckets = new ArrayList<>();
+        buckets.add( bucket );
         buckets.add( bucket2 );
         buckets.add( bucket3 );
 
         when( bucketRepository.findAll() ).thenReturn( buckets );
+        when( userAggregateRepository.findByUserName( any() ) ).thenReturn( user );
 
         // execute the call
-        List<BucketMetadata> result = apiRequestService.fetchMetaDataForBucketsInS3( "sethuram" );
+        List<BucketMetadata> result = apiRequestService.fetchBucketsMetaDataByUserName( "sethu" );
 
         // assert  the results
         assertAll(

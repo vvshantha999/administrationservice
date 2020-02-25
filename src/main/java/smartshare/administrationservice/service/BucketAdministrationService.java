@@ -3,53 +3,64 @@ package smartshare.administrationservice.service;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
-import smartshare.administrationservice.models.Bucket;
-import smartshare.administrationservice.models.Status;
-import smartshare.administrationservice.repository.AdminRoleRepository;
-import smartshare.administrationservice.repository.BucketRepository;
+import smartshare.administrationservice.dto.Status;
+import smartshare.administrationservice.models.AdminRoleAggregate;
+import smartshare.administrationservice.models.BucketAggregate;
+import smartshare.administrationservice.repository.AdminRoleAggregateRepository;
+import smartshare.administrationservice.repository.BucketAggregateRepository;
+
+import java.util.Optional;
 
 @Slf4j
 @Service
 public class BucketAdministrationService {
 
-    private BucketRepository bucketRepository;
-    private AdminRoleRepository adminRoleRepository;
-    private Status statusOfOperation;
+
+    private Status status;
+    private AdminRoleAggregateRepository adminRoleAggregateRepository;
+    private BucketAggregateRepository bucketAggregateRepository;
 
     @Autowired
-    BucketAdministrationService(BucketRepository bucketRepository, AdminRoleRepository adminRoleRepository,
-                                Status statusOfOperation) {
-        this.bucketRepository = bucketRepository;
-        this.adminRoleRepository = adminRoleRepository;
-        this.statusOfOperation = statusOfOperation;
+    BucketAdministrationService(
+            Status status,
+            AdminRoleAggregateRepository adminRoleAggregateRepository,
+            BucketAggregateRepository bucketAggregateRepository
+    ) {
+        this.status = status;
+        this.adminRoleAggregateRepository = adminRoleAggregateRepository;
+        this.bucketAggregateRepository = bucketAggregateRepository;
     }
 
-    public Bucket createBucketInAccessManagementDb(String bucketName) {
-        log.info( "Inside creatBucketInAccessManagementDb" );
-        Bucket newBucket = new Bucket();
-        newBucket.setName( bucketName );
-        newBucket.setAdminRole( adminRoleRepository.getOne( Long.valueOf( "0000" ) ) ); // assuming update happens getting the current admin object
-        return bucketRepository.save( newBucket );
+
+    public BucketAggregate createBucket(String bucketName) {
+        log.info( "Inside createBucket" );
+        BucketAggregate newBucket = new BucketAggregate();
+        newBucket.setBucketName( bucketName );
+        // assuming update happens getting the current admin object
+        Optional<AdminRoleAggregate> adminRoleExists = adminRoleAggregateRepository.findFirstByOrderByAdminIdDesc();
+        System.out.println( "adminRoleExists------>" + adminRoleExists );
+        if (adminRoleExists.isPresent()) newBucket.setAdminId( adminRoleExists.get().getAdminId() );
+        else throw new IllegalArgumentException( "Admin Role is not Assigned" );
+        return bucketAggregateRepository.save( newBucket );
     }
 
-    public Status deleteBucketInAccessManagementDb(String bucketName) {
-        log.info( "Inside deleteBucketInAccessManagementDb" );
+    public Status deleteBucket(String bucketName) {
+        log.info( "Inside deleteBucket" );
 
-        Bucket bucketToBeDeleted = bucketRepository.findByName( bucketName );
-        if (bucketToBeDeleted.getObjects().isEmpty()) {
-            bucketRepository.delete( bucketToBeDeleted );
-            statusOfOperation.setValue( Boolean.TRUE );
+        BucketAggregate bucketToBeDeleted = bucketAggregateRepository.findByBucketName( bucketName );
+        if (bucketToBeDeleted.getBucketObjects().isEmpty()) {
+            bucketAggregateRepository.delete( bucketToBeDeleted );
+            status.setValue( Boolean.TRUE );
         } else {
-            statusOfOperation.setValue( Boolean.FALSE );
-            statusOfOperation.setReasonForFailure( "Please delete Bucket Objects before deleting the bucket" );
+            status.setValue( Boolean.FALSE );
+            status.setReasonForFailure( "Please delete Bucket Objects before deleting the bucket" );
         }
-        return statusOfOperation;
+        return status;
     }
 
 
-    @KafkaListener(id = "foo", groupId = "accessManagementBucketConsumer", topics = "AccessManagement")
+    //    @KafkaListener(groupId = "accessManagementBucketConsumer", topics = "AccessManagement")
     public void consume(String bucket, ConsumerRecord record) {
 
         try {
@@ -57,16 +68,16 @@ public class BucketAdministrationService {
                 case "createBucket":
                     log.info( "Consumed createBucket Event" );
                     System.out.println();
-                    Bucket bucketInAccessManagementDb = this.createBucketInAccessManagementDb( bucket );
-                    log.info( "Bucket " + bucketInAccessManagementDb.getName() + " Info is added in the Access Management " );
+                    BucketAggregate bucketInAccessManagementDb = this.createBucket( bucket );
+                    log.info( "Bucket " + bucketInAccessManagementDb.getBucketName() + " Info is added in the Access Management " );
                     break;
                 case "deleteBucket":
                     log.info( "Consumed deleteBucket Event" );
-                    Status status = this.deleteBucketInAccessManagementDb( bucket );
+                    Status status = this.deleteBucket( bucket );
                     log.info( "Bucket Info delete event Handling result in the Access Management Server " + status.getValue() + " Reason If Failed: " + status.getReasonForFailure() );
                     break;
                 default:
-                    log.info( "Inside default event" );
+                    log.error( "Unsupported accessManagementBucketConsumer event" );
             }
         } catch (Exception e) {
             log.error( "Exception while handling the accessManagementBucketConsumer events " + e.getMessage() );

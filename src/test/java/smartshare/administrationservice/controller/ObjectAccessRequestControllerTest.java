@@ -15,11 +15,10 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import smartshare.administrationservice.dto.ObjectAccessRequestFromUi;
 import smartshare.administrationservice.dto.UsersAccessingOwnerObject;
-import smartshare.administrationservice.models.ObjectAccessRequest;
-import smartshare.administrationservice.service.ObjectAccessRequestService;
+import smartshare.administrationservice.models.BucketObjectAccessRequestEntity;
+import smartshare.administrationservice.service.BucketObjectAccessRequestService;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -34,7 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class ObjectAccessRequestControllerTest {
 
     @MockBean
-    private ObjectAccessRequestService objectAccessRequestService;
+    private BucketObjectAccessRequestService bucketObjectAccessRequestService;
 
     @Autowired
     private MockMvc mockMvc;
@@ -53,7 +52,7 @@ class ObjectAccessRequestControllerTest {
         objectAccessRequestFromUis.add( objectAccessRequestFromUi2 );
         objectAccessRequestFromUis.add( objectAccessRequestFromUi3 );
 
-        when( objectAccessRequestService.createObjectAccessRequest( any() ) )
+        when( bucketObjectAccessRequestService.createBucketObjectAccessRequests( any() ) )
                 .thenReturn( true );
 
         // execute the post request
@@ -68,16 +67,16 @@ class ObjectAccessRequestControllerTest {
     @Test
     @DisplayName("DELETE /object/deleteAccessRequest - SUCCESS")
     void deleteObjectAccessRequest() throws Exception {
-        ObjectAccessRequest objectAccessRequest = new ObjectAccessRequest();
+        BucketObjectAccessRequestEntity objectAccessRequest = new BucketObjectAccessRequestEntity();
         // difficulty in creating mocks can change this stub for integration testing
 
-        when( objectAccessRequestService.deleteObjectAccessRequest( any() ) )
+        when( bucketObjectAccessRequestService.deleteBucketObjectAccessRequest( any() ) )
                 .thenReturn( true );
 
         // execute the post request
         mockMvc.perform( delete( "/object/deleteAccessRequest" )
                 .contentType( MediaType.APPLICATION_JSON )
-                .content( asJsonString( Collections.singleton( objectAccessRequest ) ) )
+                .content( asJsonString( objectAccessRequest ) )
 
         )
                 .andExpect( status().isOk() );
@@ -86,8 +85,8 @@ class ObjectAccessRequestControllerTest {
     @Test
     @DisplayName("PUT /object/approveAccessRequest - SUCCESS")
     void approveObjectAccessRequest() throws Exception {
-        ObjectAccessRequest objectAccessRequest = new ObjectAccessRequest();
-        when( objectAccessRequestService.approveObjectAccessRequest( any() ) )
+        BucketObjectAccessRequestEntity objectAccessRequest = new BucketObjectAccessRequestEntity();
+        when( bucketObjectAccessRequestService.approveBucketObjectAccessRequest( any() ) )
                 .thenReturn( true );
 
         // execute the post request
@@ -102,8 +101,8 @@ class ObjectAccessRequestControllerTest {
     @Test
     @DisplayName("PUT /object/rejectAccessRequest - SUCCESS")
     void rejectObjectAccessRequest() throws Exception {
-        ObjectAccessRequest objectAccessRequest = new ObjectAccessRequest();
-        when( objectAccessRequestService.rejectObjectAccessRequest( any() ) )
+        BucketObjectAccessRequestEntity objectAccessRequest = new BucketObjectAccessRequestEntity();
+        when( bucketObjectAccessRequestService.rejectObjectAccessRequest( any() ) )
                 .thenReturn( true );
 
         // execute the post request
@@ -127,12 +126,13 @@ class ObjectAccessRequestControllerTest {
         usersAccessingOwnerObjects.add( usersAccessingOwnerObject2 );
 
 
-        when( objectAccessRequestService.getListOfUsersAccessingOwnerObject( any() ) ).thenReturn( usersAccessingOwnerObjects );
+        when( bucketObjectAccessRequestService.getListOfUsersAccessingOwnerObjects( any(), any() ) ).thenReturn( usersAccessingOwnerObjects );
 
         // execute the get request
 
         mockMvc.perform( get( "/listOfUsersAccessingOwnersObject" )
                 .param( "owner", "sethuram" )
+                .param( "bucket", "file.server.1" )
         )
                 .andExpect( status().isOk() )
                 .andExpect( content().contentType( MediaType.APPLICATION_JSON ) );
@@ -148,15 +148,15 @@ class ObjectAccessRequestControllerTest {
     void getAccessRequestsCreatedByUser() throws Exception {
 
         // set up the mock service
-        ObjectAccessRequest objectAccessRequest1 = new ObjectAccessRequest();
-        ObjectAccessRequest objectAccessRequest2 = new ObjectAccessRequest();
+        BucketObjectAccessRequestEntity objectAccessRequest1 = new BucketObjectAccessRequestEntity();
+        BucketObjectAccessRequestEntity objectAccessRequest2 = new BucketObjectAccessRequestEntity();
 
-        List<ObjectAccessRequest> objectAccessRequests = new ArrayList<>();
+        List<BucketObjectAccessRequestEntity> objectAccessRequests = new ArrayList<>();
         objectAccessRequests.add( objectAccessRequest1 );
         objectAccessRequests.add( objectAccessRequest2 );
 
 
-        when( objectAccessRequestService.getAccessRequestsCreatedByUser( any() ) ).thenReturn( objectAccessRequests );
+        when( bucketObjectAccessRequestService.getAccessRequestsCreatedByUser( any() ) ).thenReturn( objectAccessRequests );
 
         // execute the get request
 
@@ -175,15 +175,15 @@ class ObjectAccessRequestControllerTest {
     void getAccessRequestsToBeApprovedByOwnerOfObject() throws Exception {
 
         // set up the mock service
-        ObjectAccessRequest objectAccessRequest1 = new ObjectAccessRequest();
-        ObjectAccessRequest objectAccessRequest2 = new ObjectAccessRequest();
+        BucketObjectAccessRequestEntity objectAccessRequest1 = new BucketObjectAccessRequestEntity();
+        BucketObjectAccessRequestEntity objectAccessRequest2 = new BucketObjectAccessRequestEntity();
 
-        List<ObjectAccessRequest> objectAccessRequests = new ArrayList<>();
+        List<BucketObjectAccessRequestEntity> objectAccessRequests = new ArrayList<>();
         objectAccessRequests.add( objectAccessRequest1 );
         objectAccessRequests.add( objectAccessRequest2 );
 
 
-        when( objectAccessRequestService.getAccessRequestsToBeApprovedByOwnerOfObject( any() ) ).thenReturn( objectAccessRequests );
+        when( bucketObjectAccessRequestService.getAccessRequestsToBeApprovedByOwnerOfObject( any() ) ).thenReturn( objectAccessRequests );
 
         // execute the get request
 

@@ -26,13 +26,13 @@ public class APIRequestController {
     @GetMapping(value = "objects/accessInfo")
     public List<BucketObjectMetadata> fetchMetaDataForObjectsInGivenBucketForSpecificUser(@RequestParam("bucketName") String bucketName, @RequestParam("userName") String userName) {
         log.info( "Inside fetchMetaDataForObjectsInS3" );
-        return apiRequestService.fetchMetaDataForObjectsInGivenBucketForSpecificUser( bucketName, userName );
+        return apiRequestService.fetchBucketObjectsMetaDataByBucketNameAndUserName( bucketName, userName );
     }
 
     @GetMapping(value = "buckets/accessInfo")
     public List<BucketMetadata> fetchMetaDataForBucketsInS3(@RequestParam("userName") String userName) {
         log.info( "Inside fetchMetaDataForObjectsInS3" );
-        return apiRequestService.fetchMetaDataForBucketsInS3( userName );
+        return apiRequestService.fetchBucketsMetaDataByUserName( userName );
     }
 
 

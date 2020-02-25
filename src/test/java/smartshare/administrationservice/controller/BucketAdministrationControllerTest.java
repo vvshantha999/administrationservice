@@ -14,11 +14,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
-import smartshare.administrationservice.dto.AddUserFromUiToBucket;
 import smartshare.administrationservice.dto.BucketAccessRequestFromUi;
-import smartshare.administrationservice.dto.RemoveUserFromBucket;
-import smartshare.administrationservice.models.BucketAccessRequest;
-import smartshare.administrationservice.models.Status;
+import smartshare.administrationservice.dto.Status;
+import smartshare.administrationservice.dto.UserBucketMapping;
+import smartshare.administrationservice.models.BucketAccessRequestEntity;
 import smartshare.administrationservice.service.BucketAccessRequestService;
 
 import java.util.ArrayList;
@@ -84,7 +83,7 @@ class BucketAdministrationControllerTest {
 
         // difficulty in creating mocks can change this stub for integration testing
 
-        BucketAccessRequest bucketAccessRequest = new BucketAccessRequest();
+        BucketAccessRequestEntity bucketAccessRequest = new BucketAccessRequestEntity();
 //        bucketAccessRequest.setStatus( StatusConstants.APPROVED.toString() );
 //        bucketAccessRequest.setAdminRole( new AdminRole() );
 //        bucketAccessRequest.setAdminAccess( new AdminAccess() );
@@ -111,7 +110,7 @@ class BucketAdministrationControllerTest {
 
         // difficulty in creating mocks can change this stub for integration testing
 
-        BucketAccessRequest bucketAccessRequest = new BucketAccessRequest();
+        BucketAccessRequestEntity bucketAccessRequest = new BucketAccessRequestEntity();
 
         when( bucketAccessRequestService.rejectBucketAccessRequest( any() ) ).thenReturn( Boolean.TRUE );
 
@@ -130,7 +129,7 @@ class BucketAdministrationControllerTest {
 
         // difficulty in creating mocks can change this stub for integration testing
 
-        AddUserFromUiToBucket addUserFromUiToBucket = new AddUserFromUiToBucket( "sethuram", "file.server.1" );
+        UserBucketMapping addUserFromUiToBucket = new UserBucketMapping( "sethuram", "file.server.1" );
 
         when( bucketAccessRequestService.addUserToBucketByBucketAdmin( any() ) ).thenReturn( Boolean.TRUE );
 
@@ -149,7 +148,7 @@ class BucketAdministrationControllerTest {
 
         // difficulty in creating mocks can change this stub for integration testing
 
-        RemoveUserFromBucket removeUserFromBucket = new RemoveUserFromBucket( "sethuram", "file.server.1" );
+        UserBucketMapping removeUserFromBucket = new UserBucketMapping( "sethuram", "file.server.1" );
         Status status = new Status();
         status.setValue( Boolean.TRUE );
         when( bucketAccessRequestService.removeUserFromBucketByBucketAdmin( any() ) ).thenReturn( status );
@@ -169,7 +168,7 @@ class BucketAdministrationControllerTest {
 
         // difficulty in creating mocks can change this stub for integration testing
 
-        RemoveUserFromBucket removeUserFromBucket = new RemoveUserFromBucket( "sethuram", "file.server.1" );
+        UserBucketMapping removeUserFromBucket = new UserBucketMapping( "sethuram", "file.server.1" );
         Status status = new Status();
         status.setValue( Boolean.FALSE );
         status.setReasonForFailure( "The user has Objects which has to be deleted before removing the user" );
@@ -192,7 +191,7 @@ class BucketAdministrationControllerTest {
 
         // difficulty in creating mocks can change this stub for integration testing
 
-        BucketAccessRequest bucketAccessRequest = new BucketAccessRequest();
+        BucketAccessRequestEntity bucketAccessRequest = new BucketAccessRequestEntity();
         Status status = new Status();
         status.setValue( Boolean.TRUE );
         when( bucketAccessRequestService.deleteBucketAccessRequest( any() ) ).thenReturn( status );
@@ -212,7 +211,7 @@ class BucketAdministrationControllerTest {
 
         // difficulty in creating mocks can change this stub for integration testing
 
-        BucketAccessRequest bucketAccessRequest = new BucketAccessRequest();
+        BucketAccessRequestEntity bucketAccessRequest = new BucketAccessRequestEntity();
         Status status = new Status();
         status.setValue( Boolean.FALSE );
         status.setReasonForFailure( HttpStatus.NOT_FOUND.getReasonPhrase() );
@@ -233,7 +232,7 @@ class BucketAdministrationControllerTest {
 
         // difficulty in creating mocks can change this stub for integration testing
 
-        BucketAccessRequest bucketAccessRequest = new BucketAccessRequest();
+        BucketAccessRequestEntity bucketAccessRequest = new BucketAccessRequestEntity();
         Status status = new Status();
         status.setValue( Boolean.FALSE );
         status.setReasonForFailure( HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase() );
@@ -253,10 +252,10 @@ class BucketAdministrationControllerTest {
     void getBucketAccessRequestForAdmin() throws Exception {
 
         // set up the mock service
-        BucketAccessRequest bucketAccessRequest1 = new BucketAccessRequest();
-        BucketAccessRequest bucketAccessRequest2 = new BucketAccessRequest();
-        BucketAccessRequest bucketAccessRequest3 = new BucketAccessRequest();
-        List<BucketAccessRequest> bucketAccessRequestList = new ArrayList<>();
+        BucketAccessRequestEntity bucketAccessRequest1 = new BucketAccessRequestEntity();
+        BucketAccessRequestEntity bucketAccessRequest2 = new BucketAccessRequestEntity();
+        BucketAccessRequestEntity bucketAccessRequest3 = new BucketAccessRequestEntity();
+        List<BucketAccessRequestEntity> bucketAccessRequestList = new ArrayList<>();
         bucketAccessRequestList.add( bucketAccessRequest1 );
         bucketAccessRequestList.add( bucketAccessRequest2 );
         bucketAccessRequestList.add( bucketAccessRequest3 );
@@ -282,10 +281,10 @@ class BucketAdministrationControllerTest {
     @DisplayName("GET  /bucket/bucketAccessRequestForUser - SUCCESS")
     void getBucketAccessRequestForUser() throws Exception {
         // set up the mock service
-        BucketAccessRequest bucketAccessRequest1 = new BucketAccessRequest();
-        BucketAccessRequest bucketAccessRequest2 = new BucketAccessRequest();
-        BucketAccessRequest bucketAccessRequest3 = new BucketAccessRequest();
-        List<BucketAccessRequest> bucketAccessRequestList = new ArrayList<>();
+        BucketAccessRequestEntity bucketAccessRequest1 = new BucketAccessRequestEntity();
+        BucketAccessRequestEntity bucketAccessRequest2 = new BucketAccessRequestEntity();
+        BucketAccessRequestEntity bucketAccessRequest3 = new BucketAccessRequestEntity();
+        List<BucketAccessRequestEntity> bucketAccessRequestList = new ArrayList<>();
         bucketAccessRequestList.add( bucketAccessRequest1 );
         bucketAccessRequestList.add( bucketAccessRequest2 );
         bucketAccessRequestList.add( bucketAccessRequest3 );

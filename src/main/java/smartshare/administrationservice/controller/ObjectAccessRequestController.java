@@ -8,8 +8,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import smartshare.administrationservice.dto.ObjectAccessRequestFromUi;
 import smartshare.administrationservice.dto.UsersAccessingOwnerObject;
-import smartshare.administrationservice.models.ObjectAccessRequest;
-import smartshare.administrationservice.service.ObjectAccessRequestService;
+import smartshare.administrationservice.models.BucketObjectAccessRequestEntity;
+import smartshare.administrationservice.service.BucketObjectAccessRequestService;
 
 import java.util.List;
 
@@ -19,11 +19,12 @@ import java.util.List;
 @CrossOrigin(origins = "*")
 public class ObjectAccessRequestController {
 
-    private ObjectAccessRequestService objectAccessRequestService;
+    private BucketObjectAccessRequestService bucketObjectAccessRequestService;
 
     @Autowired
-    ObjectAccessRequestController(ObjectAccessRequestService objectAccessRequestService) {
-        this.objectAccessRequestService = objectAccessRequestService;
+    ObjectAccessRequestController(BucketObjectAccessRequestService bucketObjectAccessRequestService) {
+
+        this.bucketObjectAccessRequestService = bucketObjectAccessRequestService;
     }
 
     @PostMapping(value = "/object/createAccessRequest")
@@ -32,51 +33,50 @@ public class ObjectAccessRequestController {
 
         // scenario requesting access for folders or files either read or write. From Ui not sure how the input is
 
-        return objectAccessRequestService.createObjectAccessRequest( objectAccessRequestsFromUi ) ? new ResponseEntity( HttpStatus.CREATED ) :
+        return bucketObjectAccessRequestService.createBucketObjectAccessRequests( objectAccessRequestsFromUi ) ? new ResponseEntity( HttpStatus.CREATED ) :
                 ResponseEntity.badRequest().build();
     }
 
     @DeleteMapping(value = "/object/deleteAccessRequest")
-    public ResponseEntity deleteObjectAccessRequest(@RequestBody List<ObjectAccessRequest> objectAccessRequests) {
+    public ResponseEntity deleteObjectAccessRequest(@RequestBody BucketObjectAccessRequestEntity objectAccessRequests) {
         log.info( "Inside createObjectAccessRequest" );
-        return objectAccessRequestService.deleteObjectAccessRequest( objectAccessRequests ) ? ResponseEntity.ok().build() :
+        return bucketObjectAccessRequestService.deleteBucketObjectAccessRequest( objectAccessRequests ) ? ResponseEntity.ok().build() :
                 ResponseEntity.badRequest().build();
     }
 
     @PutMapping(value = "/object/approveAccessRequest")
-    public ResponseEntity approveObjectAccessRequest(@RequestBody ObjectAccessRequest objectAccessRequest) {
+    public ResponseEntity approveObjectAccessRequest(@RequestBody BucketObjectAccessRequestEntity objectAccessRequest) {
         log.info( "Inside approveObjectAccessRequest" );
 
         // in ui it has to send all the children files in folder to accept at a shot
 
-        return objectAccessRequestService.approveObjectAccessRequest( objectAccessRequest ) ? ResponseEntity.ok().build() :
+        return bucketObjectAccessRequestService.approveBucketObjectAccessRequest( objectAccessRequest ) ? ResponseEntity.ok().build() :
                 ResponseEntity.badRequest().build();
     }
 
     @PutMapping(value = "/object/rejectAccessRequest")
-    public ResponseEntity rejectObjectAccessRequest(@RequestBody ObjectAccessRequest objectAccessRequest) {
+    public ResponseEntity rejectObjectAccessRequest(@RequestBody BucketObjectAccessRequestEntity objectAccessRequest) {
         log.info( "Inside approveObjectAccessRequest" );
-        return objectAccessRequestService.rejectObjectAccessRequest( objectAccessRequest ) ? ResponseEntity.ok().build() :
+        return bucketObjectAccessRequestService.rejectObjectAccessRequest( objectAccessRequest ) ? ResponseEntity.ok().build() :
                 ResponseEntity.badRequest().build();
     }
 
     @GetMapping(value = "/listOfUsersAccessingOwnersObject")
-    public List<UsersAccessingOwnerObject> getListOfUsersAccessingOwnerObject(@RequestParam("owner") String ownerName) {
+    public List<UsersAccessingOwnerObject> getListOfUsersAccessingOwnerObject(@RequestParam("bucket") String bucketName, @RequestParam("owner") String ownerName) {
         log.info( "Inside getListOfUsersAccessingOwnersFile" );
-        return objectAccessRequestService.getListOfUsersAccessingOwnerObject( ownerName );
+        return bucketObjectAccessRequestService.getListOfUsersAccessingOwnerObjects( bucketName, ownerName );
 
     }
-
     @GetMapping(value = "/accessRequestsCreatedByUser")
-    public List<ObjectAccessRequest> getAccessRequestsCreatedByUser(@RequestParam("user") String userName) {
+    public List<BucketObjectAccessRequestEntity> getAccessRequestsCreatedByUser(@RequestParam("user") String userName) {
         log.info( "Inside getListOfUsersAccessingOwnersFile" );
-        return objectAccessRequestService.getAccessRequestsCreatedByUser( userName );
+        return bucketObjectAccessRequestService.getAccessRequestsCreatedByUser( userName );
     }
 
     @GetMapping(value = "/accessRequestsOfOwner")
-    public List<ObjectAccessRequest> getAccessRequestsToBeApprovedByOwnerOfObject(@RequestParam("owner") String ownerName) {
+    public List<BucketObjectAccessRequestEntity> getAccessRequestsToBeApprovedByOwnerOfObject(@RequestParam("owner") String ownerName) {
         log.info( "Inside getListOfUsersAccessingOwnersFile" );
-        return objectAccessRequestService.getAccessRequestsToBeApprovedByOwnerOfObject( ownerName );
+        return bucketObjectAccessRequestService.getAccessRequestsToBeApprovedByOwnerOfObject( ownerName );
     }
 
 
