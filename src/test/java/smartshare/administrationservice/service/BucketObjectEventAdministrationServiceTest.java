@@ -62,7 +62,7 @@ class BucketObjectEventAdministrationServiceTest {
     @MockBean
     private BucketAggregateRepository bucketRepository;
     @Autowired
-    private BucketObjectEventAdministrationService bucketObjectEventAdministrationService;
+    private BucketObjectAdministrationService bucketObjectAdministrationService;
 
     @BeforeEach
     public void setUp() {
@@ -134,7 +134,7 @@ class BucketObjectEventAdministrationServiceTest {
         when( bucketRepository.findByBucketName( any() ) ).thenReturn( bucket );
 
 
-        bucketObjectEventAdministrationService.createAccessDetailForBucketObject( singleRecord.value()[0] );
+        bucketObjectAdministrationService.createAccessDetailForBucketObject( singleRecord.value()[0] );
         verify( userRepository ).findByUserName( any() );
         verify( bucketRepository ).findByBucketName( any() );
         verify( bucketRepository ).save( any() );
@@ -191,7 +191,7 @@ class BucketObjectEventAdministrationServiceTest {
         when( bucketRepository.findByBucketName( any() ) ).thenReturn( bucket );
 
 
-        bucketObjectEventAdministrationService.createAccessDetailForUploadedBucketObjects( Arrays.asList( singleRecord.value() ) );
+        bucketObjectAdministrationService.createAccessDetailForUploadedBucketObjects( Arrays.asList( singleRecord.value() ) );
         verify( userRepository, times( 2 ) ).findByUserName( any() );
         verify( bucketRepository, times( 2 ) ).findByBucketName( any() );
         verify( bucketRepository, times( 2 ) ).save( any() );
@@ -250,7 +250,7 @@ class BucketObjectEventAdministrationServiceTest {
         when( userRepository.findByUserName( any() ) ).thenReturn( user );
         when( bucketRepository.findByBucketName( any() ) ).thenReturn( bucket );
 
-        bucketObjectEventAdministrationService.deleteBucketObjects( Arrays.asList( singleRecord.value() ) );
+        bucketObjectAdministrationService.deleteBucketObjects( Arrays.asList( singleRecord.value() ) );
         verify( userRepository, times( 2 ) ).findByUserName( any() );
         verify( bucketRepository, times( 2 ) ).findByBucketName( any() );
         verify( bucketRepository, times( 2 ) ).save( any() );

@@ -36,9 +36,6 @@ class ObjectAccessRequestServiceTest {
     @MockBean
     private UserAggregateRepository userRepository;
 
-//    @MockBean
-//    private ObjectAccessEntityRepository objectAccessEntityRepository;
-
     @Autowired
     private BucketObjectAccessRequestService objectAccessRequestService;
 
