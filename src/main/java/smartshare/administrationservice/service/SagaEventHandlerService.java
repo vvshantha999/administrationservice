@@ -3,8 +3,6 @@ package smartshare.administrationservice.service;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.stereotype.Service;
 import smartshare.administrationservice.dto.BucketObjectEvent;
 import smartshare.administrationservice.dto.SagaEvent;
@@ -52,8 +50,8 @@ public class SagaEventHandlerService {
 //    }
 
 
-    @KafkaListener(groupId = "sagaEventConsumer", topics = "sagaAccess", containerFactory = "SagaEventKafkaListenerContainerFactory")
-    @SendTo("sagaAccessResult")
+    //    @KafkaListener(groupId = "sagaEventConsumer", topics = "sagaAccess", containerFactory = "SagaEventKafkaListenerContainerFactory")
+//    @SendTo("sagaAccessResult")
     public SagaEvent consume(SagaEvent sagaEvent, ConsumerRecord record) {
 
         try {

@@ -69,6 +69,20 @@ class APIRequestControllerTest {
                 .andExpect( jsonPath( "$[0].objectName" ).value( "Sample1.txt" ) )
                 .andExpect( jsonPath( "$[0].objectMetadata.ownerName" ).value( "Owner" ) );
 
+//        [
+//        {
+//            "objectName":"Sample1.txt",
+//                "objectMetadata":{
+//            "ownerName":"Owner",
+//                    "accessingUserInfo":{
+//                "userName":"sethuram",
+//                        "read":false,
+//                        "write":true,
+//                        "delete":false
+//            }
+//        }
+//        }
+//]
 
     }
 
