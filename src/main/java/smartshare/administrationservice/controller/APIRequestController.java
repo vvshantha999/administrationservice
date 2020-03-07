@@ -4,11 +4,9 @@ package smartshare.administrationservice.controller;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-import smartshare.administrationservice.dto.BucketMetadata;
-import smartshare.administrationservice.dto.BucketObjectMetadata;
+import smartshare.administrationservice.dto.response.BucketObjectsMetadata;
+import smartshare.administrationservice.dto.response.BucketsMetadata;
 import smartshare.administrationservice.service.APIRequestService;
-
-import java.util.List;
 
 @Slf4j
 @RestController
@@ -24,15 +22,15 @@ public class APIRequestController {
     }
 
     @GetMapping(value = "objects/accessInfo")
-    public List<BucketObjectMetadata> fetchMetaDataForObjectsInGivenBucketForSpecificUser(@RequestParam("bucketName") String bucketName, @RequestParam("userName") String userName) {
+    public BucketObjectsMetadata fetchMetaDataForObjectsInGivenBucketForSpecificUser(@RequestParam("bucketName") String bucketName, @RequestParam("userName") String userName) {
         log.info( "Inside fetchMetaDataForObjectsInS3" );
-        return apiRequestService.fetchBucketObjectsMetaDataByBucketNameAndUserName( bucketName, userName );
+        return new BucketObjectsMetadata( apiRequestService.fetchBucketObjectsMetaDataByBucketNameAndUserName( bucketName, userName ) );
     }
 
     @GetMapping(value = "buckets/accessInfo")
-    public List<BucketMetadata> fetchMetaDataForBucketsInS3(@RequestParam("userName") String userName) {
+    public BucketsMetadata fetchMetaDataForBucketsInS3(@RequestParam("userName") String userName) {
         log.info( "Inside fetchMetaDataForObjectsInS3" );
-        return apiRequestService.fetchBucketsMetaDataByUserName( userName );
+        return new BucketsMetadata( apiRequestService.fetchBucketsMetaDataByUserName( userName ) );
     }
 
 

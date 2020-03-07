@@ -75,7 +75,7 @@ public class APIRequestService {
                     .sorted( Comparator.comparing( BucketObjectMetadata::getObjectName ) )
                     .collect( Collectors.toList() );
         } catch (Exception e) {
-            log.error( "Exception inside fetchMetaDataForObjectsInS3 service layer ", e );
+            log.error( "Exception inside fetchBucketObjectsMetaDataByBucketAndUser service layer ", e );
         }
         return null;
     }

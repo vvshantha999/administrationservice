@@ -66,23 +66,8 @@ class APIRequestControllerTest {
         )
                 .andExpect( status().isOk() )
                 .andExpect( content().contentType( MediaType.APPLICATION_JSON ) )
-                .andExpect( jsonPath( "$[0].objectName" ).value( "Sample1.txt" ) )
-                .andExpect( jsonPath( "$[0].objectMetadata.ownerName" ).value( "Owner" ) );
-
-//        [
-//        {
-//            "objectName":"Sample1.txt",
-//                "objectMetadata":{
-//            "ownerName":"Owner",
-//                    "accessingUserInfo":{
-//                "userName":"sethuram",
-//                        "read":false,
-//                        "write":true,
-//                        "delete":false
-//            }
-//        }
-//        }
-//]
+                .andExpect( jsonPath( "$.bucketObjectsMetadata[0].objectName" ).value( "Sample1.txt" ) )
+                .andExpect( jsonPath( "$.bucketObjectsMetadata[0].objectMetadata.ownerName" ).value( "Owner" ) );
 
     }
 
@@ -105,8 +90,8 @@ class APIRequestControllerTest {
                 .param( "userName", "sethuram" )
         )
                 .andExpect( status().isOk() )
-                .andExpect( jsonPath( "$[0].read" ).value( true ) )
-                .andExpect( jsonPath( "$[0].write" ).value( false ) );
+                .andExpect( jsonPath( "$.bucketsMetadata[0].read" ).value( true ) )
+                .andExpect( jsonPath( "$.bucketsMetadata[0].write" ).value( false ) );
 
     }
 }
