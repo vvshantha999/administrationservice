@@ -14,6 +14,7 @@ import smartshare.administrationservice.repository.UserAggregateRepository;
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 
 
 @Component
@@ -47,18 +48,15 @@ public class BucketAccessRequestMapper implements Mapper {
         BucketAggregate bucketAggregate = bucketAggregateRepository.findByBucketName( bucketAccessRequestFromUi.getBucketName() );
         newBucketAccessRequest.setBucketId( bucketAggregate.getBucketId() );
         BucketAccessEntity bucketAccess = null;
-        if (bucketAccessRequestFromUi.getAccess() == "read") {
+        if (bucketAccessRequestFromUi.getAccess().equals( "read" )) {
             bucketAccess = bucketAccessEntityRepository.findByReadAndWrite( true, false );
         }
-        if (bucketAccessRequestFromUi.getAccess() == "write") {
+        if (bucketAccessRequestFromUi.getAccess().equals( "write" )) {
             bucketAccess = bucketAccessEntityRepository.findByReadAndWrite( false, true );
         }
         newBucketAccessRequest.setBucketAccessId( Objects.requireNonNull( bucketAccess ).getBucketAccessId() );
-        newBucketAccessRequest.setUserId(
-                Objects.requireNonNull( userAggregateRepository.findByUserName( bucketAccessRequestFromUi.getUserName() ) ).getUserId()
-        );
-        Optional<AdminRoleAggregate> adminRoleExists = adminRoleAggregateRepository.findFirstByOrderByAdminIdDesc();
-        System.out.println( "adminRoleExists------>" + adminRoleExists );
+        newBucketAccessRequest.setUserId( bucketAccessRequestFromUi.getUserId() );
+        Optional<AdminRoleAggregate> adminRoleExists = adminRoleAggregateRepository.findById( UUID.fromString( "5fc03087-d265-11e7-b8c6-83e29cd24f4c" ).toString() );
         adminRoleExists.ifPresent( adminRoleAggregate -> newBucketAccessRequest.setAdminRoleId( adminRoleAggregate.getAdminRoleId() ) );
         return (T) newBucketAccessRequest;
     }

@@ -6,8 +6,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import smartshare.administrationservice.dto.ObjectAccessRequestFromUi;
-import smartshare.administrationservice.dto.UsersAccessingOwnerObject;
+import smartshare.administrationservice.dto.ObjectAccessRequest;
+import smartshare.administrationservice.dto.response.BucketObjectAccessRequestDto;
+import smartshare.administrationservice.dto.response.ownertree.FolderComponent;
+import smartshare.administrationservice.dto.response.usertree.UserFolderComponent;
 import smartshare.administrationservice.models.BucketObjectAccessRequestEntity;
 import smartshare.administrationservice.service.BucketObjectAccessRequestService;
 
@@ -28,7 +30,7 @@ public class ObjectAccessRequestController {
     }
 
     @PostMapping(value = "/object/createAccessRequest")
-    public ResponseEntity createObjectAccessRequest(@RequestBody List<ObjectAccessRequestFromUi> objectAccessRequestsFromUi) {
+    public ResponseEntity createObjectAccessRequest(@RequestBody List<ObjectAccessRequest> objectAccessRequestsFromUi) {
         log.info( "Inside createObjectAccessRequest" );
 
         // scenario requesting access for folders or files either read or write. From Ui not sure how the input is
@@ -61,23 +63,28 @@ public class ObjectAccessRequestController {
                 ResponseEntity.badRequest().build();
     }
 
-    @GetMapping(value = "/listOfUsersAccessingOwnersObject")
-    public List<UsersAccessingOwnerObject> getListOfUsersAccessingOwnerObject(@RequestParam("bucket") String bucketName, @RequestParam("owner") String ownerName) {
-        log.info( "Inside getListOfUsersAccessingOwnersFile" );
-        return bucketObjectAccessRequestService.getListOfUsersAccessingOwnerObjects( bucketName, ownerName );
-
-    }
     @GetMapping(value = "/accessRequestsCreatedByUser")
-    public List<BucketObjectAccessRequestEntity> getAccessRequestsCreatedByUser(@RequestParam("user") String userName) {
+    public List<BucketObjectAccessRequestDto> getAccessRequestsCreatedByUser(@RequestParam("user") String userName) {
         log.info( "Inside getListOfUsersAccessingOwnersFile" );
         return bucketObjectAccessRequestService.getAccessRequestsCreatedByUser( userName );
     }
 
     @GetMapping(value = "/accessRequestsOfOwner")
-    public List<BucketObjectAccessRequestEntity> getAccessRequestsToBeApprovedByOwnerOfObject(@RequestParam("owner") String ownerName) {
+    public List<BucketObjectAccessRequestDto> getAccessRequestsToBeApprovedByOwnerOfObject(@RequestParam("owner") String ownerName) {
         log.info( "Inside getListOfUsersAccessingOwnersFile" );
         return bucketObjectAccessRequestService.getAccessRequestsToBeApprovedByOwnerOfObject( ownerName );
     }
 
+    @GetMapping(value = "/listOfUsersAccessingOwnersObject")
+    public FolderComponent getListOfUsersAccessingOwnerObject(@RequestParam("bucket") String bucketName, @RequestParam("owner") String ownerName) {
+        log.info( "Inside getListOfUsersAccessingOwnerObject" );
+        return bucketObjectAccessRequestService.getListOfUsersAccessingOwnerObjects( bucketName, ownerName );
+    }
+
+    @GetMapping(path = "userFiles")
+    public UserFolderComponent getUserFilesByBucket(@RequestParam("bucket") String bucketName, @RequestParam("user") String userName) {
+        log.info( "Inside getListOfUsersAccessingOwnerObject" );
+        return bucketObjectAccessRequestService.getUserFilesByBucket( bucketName, userName );
+    }
 
 }

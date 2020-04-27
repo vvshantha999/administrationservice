@@ -4,20 +4,14 @@ package smartshare.administrationservice.service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import smartshare.administrationservice.dto.AccessingUserInfoForApi;
-import smartshare.administrationservice.dto.BucketMetadata;
-import smartshare.administrationservice.dto.BucketObjectMetadata;
-import smartshare.administrationservice.dto.ObjectMetadata;
+import smartshare.administrationservice.constant.StatusConstants;
+import smartshare.administrationservice.dto.*;
+import smartshare.administrationservice.dto.response.UserLoginStatus;
+import smartshare.administrationservice.dto.response.UserMetadata;
 import smartshare.administrationservice.models.*;
-import smartshare.administrationservice.repository.BucketAccessEntityRepository;
-import smartshare.administrationservice.repository.BucketAggregateRepository;
-import smartshare.administrationservice.repository.ObjectAccessEntityRepository;
-import smartshare.administrationservice.repository.UserAggregateRepository;
+import smartshare.administrationservice.repository.*;
 
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -26,10 +20,14 @@ import java.util.stream.Collectors;
 public class APIRequestService {
 
 
-    private BucketAggregateRepository bucketAggregateRepository;
-    private UserAggregateRepository userAggregateRepository;
-    private ObjectAccessEntityRepository objectAccessEntityRepository;
-    private BucketAccessEntityRepository bucketAccessEntityRepository;
+    private final BucketAggregateRepository bucketAggregateRepository;
+    private final UserAggregateRepository userAggregateRepository;
+    private final ObjectAccessEntityRepository objectAccessEntityRepository;
+    private final BucketAccessEntityRepository bucketAccessEntityRepository;
+    private final AdminRoleAggregateRepository adminRoleAggregateRepository;
+    private final AdminAggregateRepository adminAggregateRepository;
+    private final BucketAccessRequestEntityRepository bucketAccessRequestEntityRepository;
+
 
     @Autowired
     public APIRequestService(
@@ -37,11 +35,17 @@ public class APIRequestService {
             BucketAggregateRepository bucketAggregateRepository,
             UserAggregateRepository userAggregateRepository,
             ObjectAccessEntityRepository objectAccessEntityRepository,
-            BucketAccessEntityRepository bucketAccessEntityRepository) {
+            BucketAccessEntityRepository bucketAccessEntityRepository,
+            AdminRoleAggregateRepository adminRoleAggregateRepository,
+            AdminAggregateRepository adminAggregateRepository,
+            BucketAccessRequestEntityRepository bucketAccessRequestEntityRepository) {
         this.bucketAggregateRepository = bucketAggregateRepository;
         this.userAggregateRepository = userAggregateRepository;
         this.objectAccessEntityRepository = objectAccessEntityRepository;
         this.bucketAccessEntityRepository = bucketAccessEntityRepository;
+        this.adminRoleAggregateRepository = adminRoleAggregateRepository;
+        this.adminAggregateRepository = adminAggregateRepository;
+        this.bucketAccessRequestEntityRepository = bucketAccessRequestEntityRepository;
     }
 
 
@@ -77,36 +81,134 @@ public class APIRequestService {
         } catch (Exception e) {
             log.error( "Exception inside fetchBucketObjectsMetaDataByBucketAndUser service layer ", e );
         }
-        return null;
+        return Collections.emptyList();
     }
 
 
     private BucketMetadata extractBucketMetadata(BucketAggregate bucket, int userId) {
         log.info( "Inside extractBucketMetadata" );
-        BucketMetadata bucketMetadata = null;
-        Optional<BucketAccessingUser> accessingUser = bucket.getBucketAccessingUsers().stream()
+        final BucketAccessEntity defaultAccessInfo = bucketAccessEntityRepository.findByReadAndWrite( false, false );
+        Optional<BucketMetadata> bucketMetadata = bucket.getBucketAccessingUsers().stream()
                 .filter( bucketAccessingUser -> bucketAccessingUser.getUserId() == userId )
-                .findFirst();
-        if (accessingUser.isPresent()) {
-            BucketAccessEntity accessInfo = bucketAccessEntityRepository.findById( accessingUser.get().getBucketAccessId() )
-                    .orElseGet( () -> bucketAccessEntityRepository.findByReadAndWrite( false, false ) );
-            bucketMetadata = new BucketMetadata( bucket.getBucketName(), accessInfo );
-        }
-        return bucketMetadata;
+                .findFirst()
+                .flatMap( bucketAccessingUser -> bucketAccessEntityRepository.findById( bucketAccessingUser.getBucketAccessId() ) )
+                .map( bucketAccessEntity -> new BucketMetadata( bucket.getBucketName(), bucketAccessEntity.getRead(), bucketAccessEntity.getWrite() ) );
+
+        return bucketMetadata.orElseGet( () -> new BucketMetadata( bucket.getBucketName(), defaultAccessInfo.getRead(), defaultAccessInfo.getWrite() ) );
     }
 
-    public List<BucketMetadata> fetchBucketsMetaDataByUserName(String userName) {
+    public List<BucketMetadata> fetchBucketsMetaDataByUserName(String userName, String email) {
         log.info( "Inside fetchMetaDataForBucketsInS3" );
         try {
-            UserAggregate user = Objects.requireNonNull( userAggregateRepository.findByUserName( userName ) );
-            return bucketAggregateRepository.findAll().stream()
-                    .map( bucket -> extractBucketMetadata( bucket, user.getUserId() ) )
-                    .filter( Objects::nonNull )
-                    .collect( Collectors.toList() );
+            Optional<UserAggregate> user = userAggregateRepository.findByUserNameAndEmail( userName, email );
+            if (user.isPresent()) {
+                return bucketAggregateRepository.findAll().stream()
+                        .map( bucket -> extractBucketMetadata( bucket, user.get().getUserId() ) )
+                        .collect( Collectors.toList() );
+            }
         } catch (Exception e) {
             log.error( "Exception inside fetchMetaDataForBucketsInS3  ", e );
         }
+        return Collections.emptyList();
+    }
+
+
+    public boolean createAdmin(UserDto user) {
+
+        log.info( "Inside createAdmin" );
+        try {
+            Optional<UserAggregate> userExists = this.userAggregateRepository.findByUserNameAndEmail( user.getUserName(), user.getEmail() );
+            if (userExists.isPresent()) {
+                System.out.println( "inside" );
+                AdminAggregate newAdmin = new AdminAggregate();
+                newAdmin.setUserId( userExists.get().getUserId() );
+                newAdmin.setCreatedOn( new Date() );
+                final AdminAggregate newlyCreatedAdmin = adminAggregateRepository.save( newAdmin );
+                AdminRoleAggregate assignNewAdminWithAdminRole = new AdminRoleAggregate();
+                assignNewAdminWithAdminRole.setAdminId( newlyCreatedAdmin.getAdminId() );
+                adminRoleAggregateRepository.save( assignNewAdminWithAdminRole );
+                return true;
+            }
+        } catch (Exception e) {
+            log.error( "Exception while creating admin" + e.getMessage() );
+        }
+        return false;
+    }
+
+    private boolean isAdmin(UserAggregate user) {
+        log.info( "Inside isAdmin" );
+        final Optional<AdminRoleAggregate> adminRoleAggregate = adminRoleAggregateRepository.findById( UUID.fromString( "5fc03087-d265-11e7-b8c6-83e29cd24f4c" ).toString() );
+        if (adminRoleAggregate.isPresent()) {
+            final Optional<AdminAggregate> adminAggregate = this.adminAggregateRepository.findById( adminRoleAggregate.get().getAdminId() );
+            if (adminAggregate.isPresent()) {
+                return adminAggregate.get().getUserId() == user.getUserId();
+            }
+        }
+        return false;
+    }
+
+    public UserLoginStatus registerUserAndCheckIsAdmin(UserDto user) {
+        log.info( "Inside registerUserAndCheckIsAdmin" );
+        try {
+            Optional<UserAggregate> userExists = this.userAggregateRepository.findByUserNameAndEmail( user.getUserName(), user.getEmail() );
+            if (userExists.isPresent()) {
+                return new UserLoginStatus( userExists.get(), isAdmin( userExists.get() ) );
+            } else {
+                UserAggregate newUser = new UserAggregate();
+                newUser.setUserName( user.getUserName() );
+                newUser.setEmail( user.getEmail() );
+                final UserAggregate savedUser = userAggregateRepository.save( newUser );
+                return new UserLoginStatus( savedUser, false );
+            }
+
+        } catch (Exception e) {
+            log.error( "Exception  in registerUserAndCheckIsAdmin " + e.getMessage() );
+        }
         return null;
+    }
+
+    public List<UserAggregate> getUsers() {
+        log.info( "Inside getUsers" );
+        try {
+            return userAggregateRepository.findAll();
+        } catch (Exception e) {
+            log.error( "Exception  in getUsers " + e.getMessage() );
+        }
+        return Collections.emptyList();
+    }
+
+    private int getBucketRequestCount(int userId) {
+        return (int) bucketAccessRequestEntityRepository.findAllByUserId( userId ).stream()
+                .filter( bucketAccessRequestEntity -> bucketAccessRequestEntity.getStatus().equals( StatusConstants.INPROGRESS.toString() ) )
+                .count();
+    }
+
+
+    public List<UserMetadata> getUsersMetadata() {
+        log.info( "Inside getUsersMetadata" );
+
+        return userAggregateRepository.findAll().stream()
+                .map( userAggregate -> {
+                    UserMetadata userMetadata = new UserMetadata();
+                    userMetadata.setName( userAggregate.getUserName() );
+                    userMetadata.setEmail( userAggregate.getEmail() );
+                    boolean isAdmin = isAdmin( userAggregate );
+                    userMetadata.setAdmin( isAdmin );
+                    bucketAggregateRepository.findAll().forEach( bucketAggregate -> {
+                        final Optional<BucketAccessingUser> isAccessingUserExist = bucketAggregate.getBucketAccessingUsers().stream()
+                                .filter( bucketAccessingUser -> bucketAccessingUser.getUserId() == userAggregate.getUserId() )
+                                .findFirst();
+                        if (isAccessingUserExist.isPresent()) {
+                            List<String> updatedBucketNamesList = userMetadata.getBucketNames();
+                            updatedBucketNamesList.add( bucketAggregate.getBucketName() );
+                            userMetadata.setBucketNames( updatedBucketNamesList );
+                        }
+
+                    } );
+                    userMetadata.setBucketRequestsCount( getBucketRequestCount( userAggregate.getUserId() ) );
+                    return userMetadata;
+                } )
+                .collect( Collectors.toList() );
     }
 
 }

@@ -22,7 +22,7 @@ public class BucketObjectAggregate {
 
     private int ownerId;
 
-    @OneToMany(mappedBy = "bucketObject", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "bucketObject", orphanRemoval = true)
     private Set<BucketObjectAccessingUser> accessingUsers = new HashSet<>();
 
     public BucketObjectAggregate(String bucketObjectName, BucketAggregate bucket, int ownerId) {
@@ -34,13 +34,16 @@ public class BucketObjectAggregate {
 
 
     public BucketObjectAggregate addAccessingUser(int userId, int objectAccessId) {
-        this.accessingUsers.add( new BucketObjectAccessingUser( this.bucket.getBucketId(), this, userId, objectAccessId ) );
+        final BucketObjectAccessingUser newBucketObjectAccessingUser = new BucketObjectAccessingUser( this.bucket.getBucketId(), this, userId, objectAccessId );
+        this.accessingUsers.add( newBucketObjectAccessingUser );
+        newBucketObjectAccessingUser.setBucketObject( this );
         return this;
     }
 
-    public BucketObjectAggregate removeAccessingUser(BucketObjectAccessingUser accessingUser) {
+    public Boolean removeAccessingUser(BucketObjectAccessingUser accessingUser) {
+        accessingUser.setBucketObject( null );
         this.accessingUsers.remove( accessingUser );
-        return this;
+        return true;
     }
 
     public Boolean isUserExistsInBucketObject(int userId) {

@@ -50,7 +50,7 @@ class BucketAccessRequestServiceTest {
         BucketAccessRequestFromUi bucketAccessRequestFromUi = new BucketAccessRequestFromUi();
         bucketAccessRequestFromUi.setAccess( "read" );
         bucketAccessRequestFromUi.setBucketName( "file.server.1" );
-        bucketAccessRequestFromUi.setUserName( "sethuram" );
+        bucketAccessRequestFromUi.setUserId( 1 );
 
         BucketAccessRequestEntity bucketAccessRequest = new BucketAccessRequestEntity();
 
@@ -79,7 +79,7 @@ class BucketAccessRequestServiceTest {
         when( bucketAggregateRepository.findByBucketName( any() ) ).thenReturn( bucket );
         when( userAggregateRepository.findByUserName( any() ) ).thenReturn( user );
         when( bucketAccessEntityRepository.findByReadAndWrite( any(), any() ) ).thenReturn( bucketAccessEntity );
-        when( adminRoleAggregateRepository.findFirstByOrderByAdminIdDesc() ).thenReturn( Optional.of( adminRole ) );
+        when( adminRoleAggregateRepository.findById( any() ) ).thenReturn( Optional.of( adminRole ) );
         when( bucketAccessRequestEntityRepository.save( any() ) ).thenReturn( bucketAccessRequest );
 
         // execute the call
@@ -90,7 +90,7 @@ class BucketAccessRequestServiceTest {
         verify( bucketAggregateRepository ).findByBucketName( any() );
         verify( userAggregateRepository ).findByUserName( any() );
         verify( bucketAccessEntityRepository ).findByReadAndWrite( any(), any() );
-        verify( adminRoleAggregateRepository ).findFirstByOrderByAdminIdDesc();
+        verify( adminRoleAggregateRepository ).findById( any() );
         verify( bucketAccessRequestEntityRepository ).save( any() );
 
     }

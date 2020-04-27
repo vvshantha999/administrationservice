@@ -1,16 +1,17 @@
 package smartshare.administrationservice.dto;
 
+import com.fasterxml.jackson.annotation.JsonRootName;
 import lombok.Data;
-import smartshare.administrationservice.constant.StatusConstants;
 
 import java.util.List;
 
-
+@JsonRootName("SagaEvent")
 public @Data
 class SagaEvent {
 
     private String eventId;
     private List<BucketObjectEvent> objects;
-    private String status = StatusConstants.INPROGRESS.toString();
+    private String status;
+
 
 }

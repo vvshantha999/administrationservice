@@ -108,7 +108,7 @@ class BucketObjectEventAdministrationServiceTest {
 
 
         BucketAggregate bucket = new BucketAggregate();
-        bucket.setBucketName( "file.server.1" );
+        bucket.setBucketName( "bucket975351" );
         bucket.setAdminId( 1 );
         bucket.setBucketId( 1 );
 

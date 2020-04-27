@@ -32,6 +32,7 @@ public class KafkaConfiguration {
 
 
         consumerConfigurationProperties.put( ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "127.0.0.1:9092" );
+        consumerConfigurationProperties.put( ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, true );
         consumerConfigurationProperties.put( ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class );
         consumerConfigurationProperties.put( ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class );
 
@@ -50,12 +51,17 @@ public class KafkaConfiguration {
 
     @Bean
     public ConsumerFactory<String, BucketObjectEvent[]> consumerFactory() {
-        return new DefaultKafkaConsumerFactory<>( consumerConfigurationProperties, new StringDeserializer(), new JsonDeserializer<>( BucketObjectEvent[].class ) );
+        return new DefaultKafkaConsumerFactory<>( consumerConfigurationProperties, new StringDeserializer(), new JsonDeserializer<>( BucketObjectEvent[].class, false ) );
+    }
+
+    @Bean
+    public ConsumerFactory<String, String> bucketAdministrationConsumerFactory() {
+        return new DefaultKafkaConsumerFactory<>( consumerConfigurationProperties, new StringDeserializer(), new StringDeserializer() );
     }
 
     @Bean
     public ConsumerFactory<String, SagaEvent> sagaEventConsumerFactory() {
-        return new DefaultKafkaConsumerFactory<>( consumerConfigurationProperties, new StringDeserializer(), new JsonDeserializer<>( SagaEvent.class ) );
+        return new DefaultKafkaConsumerFactory<>( consumerConfigurationProperties, new StringDeserializer(), new JsonDeserializer<>( SagaEvent.class, false ) );
     }
 
     @Bean
@@ -70,6 +76,13 @@ public class KafkaConfiguration {
         ConcurrentKafkaListenerContainerFactory<String, SagaEvent> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory( sagaEventConsumerFactory() );
         factory.setReplyTemplate( sagaEventKafkaTemplate() );
+        return factory;
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, String> bucketAdministrationConsumerContainerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, String> factory = new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory( bucketAdministrationConsumerFactory() );
         return factory;
     }
 

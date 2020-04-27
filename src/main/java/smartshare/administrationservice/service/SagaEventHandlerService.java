@@ -3,7 +3,13 @@ package smartshare.administrationservice.service;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.support.KafkaHeaders;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.handler.annotation.SendTo;
+import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Service;
+import smartshare.administrationservice.constant.StatusConstants;
 import smartshare.administrationservice.dto.BucketObjectEvent;
 import smartshare.administrationservice.dto.SagaEvent;
 
@@ -28,7 +34,9 @@ public class SagaEventHandlerService {
         sagaEventResult.setEventId( sagaEvent.getEventId() );
         List<BucketObjectEvent> bucketObjectEventResults = bucketObjectAdministrationService.createAccessDetailForUploadedBucketObjects( sagaEvent.getObjects() );
         sagaEventResult.setObjects( bucketObjectEventResults );
-//        sagaEventResult.setObjects( sagaEvent.getObjects() ); testing..
+        sagaEventResult.setStatus( bucketObjectEventResults.stream()
+                .anyMatch( bucketObjectForEvent -> bucketObjectForEvent.getStatus().equals( "failed" ) ) ? StatusConstants.FAILED.toString() : StatusConstants.SUCCESS.toString() );
+        System.out.println( " Result--->" + sagaEventResult );
         return sagaEventResult;
     }
 
@@ -50,19 +58,30 @@ public class SagaEventHandlerService {
 //    }
 
 
-    //    @KafkaListener(groupId = "sagaEventConsumer", topics = "sagaAccess", containerFactory = "SagaEventKafkaListenerContainerFactory")
-//    @SendTo("sagaAccessResult")
-    public SagaEvent consume(SagaEvent sagaEvent, ConsumerRecord record) {
+    @KafkaListener(groupId = "sagaEventConsumer", topics = "sagaAccess", containerFactory = "SagaEventKafkaListenerContainerFactory")
+    @SendTo("sagaAccessResult")
+    public Message<SagaEvent> consume(SagaEvent sagaEvent, ConsumerRecord record) {
 
+        System.out.println( "----------->" + record );
+        System.out.println( "----------->" + sagaEvent );
         try {
 
             switch (record.key().toString()) {
                 case "create":
                     log.info( "Consumed create saga Events" );
-                    return this.createEventHandler( sagaEvent );
+                    return MessageBuilder
+                            .withPayload( this.createEventHandler( sagaEvent ) )
+                            .setHeader( KafkaHeaders.TOPIC, "sagaAccessResult" )
+                            .setHeader( KafkaHeaders.MESSAGE_KEY, record.key() )
+                            .build();
                 case "delete":
                     log.info( "Consumed delete saga Events" );
-                    return this.deleteEventHandler( sagaEvent );
+                    return MessageBuilder
+                            .withPayload( this.deleteEventHandler( sagaEvent ) )
+                            .setHeader( KafkaHeaders.TOPIC, "sagaAccessResult" )
+                            .setHeader( KafkaHeaders.MESSAGE_KEY, record.key() )
+                            .build();
+
                 default:
                     log.error( "Unsupported accessManagementBucketConsumer event" );
             }
@@ -70,6 +89,10 @@ public class SagaEventHandlerService {
             log.error( "Exception while handling the accessManagementBucketConsumer events " + e.getMessage() );
         }
 
-        return sagaEvent;
+        return MessageBuilder
+                .withPayload( sagaEvent )
+                .setHeader( KafkaHeaders.TOPIC, "sagaAccessResult" )
+                .setHeader( KafkaHeaders.MESSAGE_KEY, record.key() )
+                .build();
     }
 }

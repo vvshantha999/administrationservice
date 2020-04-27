@@ -1,5 +1,8 @@
 package smartshare.administrationservice.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -10,12 +13,11 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
-import smartshare.administrationservice.dto.AccessingUserInfoForApi;
-import smartshare.administrationservice.dto.BucketMetadata;
-import smartshare.administrationservice.dto.BucketObjectMetadata;
-import smartshare.administrationservice.dto.ObjectMetadata;
+import smartshare.administrationservice.dto.*;
+import smartshare.administrationservice.dto.response.UserLoginStatus;
 import smartshare.administrationservice.models.BucketAccessEntity;
 import smartshare.administrationservice.models.ObjectAccessEntity;
+import smartshare.administrationservice.models.UserAggregate;
 import smartshare.administrationservice.service.APIRequestService;
 
 import java.util.ArrayList;
@@ -24,6 +26,7 @@ import java.util.List;
 
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 
@@ -80,9 +83,9 @@ class APIRequestControllerTest {
         bucketAccess.setBucketAccessId( 1 );
         bucketAccess.setRead( true );
         bucketAccess.setWrite( false );
-        BucketMetadata bucketMetadata = new BucketMetadata( "file.server.1", bucketAccess );
+        BucketMetadata bucketMetadata = new BucketMetadata( "file.server.1", bucketAccess.getRead(), bucketAccess.getWrite() );
 
-        when( apiRequestService.fetchBucketsMetaDataByUserName( "sethuram" ) )
+        when( apiRequestService.fetchBucketsMetaDataByUserName( "sethuram", "sethuram500@gmail.com" ) )
                 .thenReturn( Collections.singletonList( bucketMetadata ) );
         // execute the get request
 
@@ -93,5 +96,36 @@ class APIRequestControllerTest {
                 .andExpect( jsonPath( "$.bucketsMetadata[0].read" ).value( true ) )
                 .andExpect( jsonPath( "$.bucketsMetadata[0].write" ).value( false ) );
 
+    }
+
+    @Test
+    @DisplayName("POST register")
+    void registerUser() throws Exception {
+        // set up the mock service
+
+        UserDto userDto = new UserDto();
+        userDto.setUserName( "sethuram" );
+        userDto.setEmail( "sethuram@gmail.com" );
+        UserAggregate user = new UserAggregate();
+        user.setUserId( 1 );
+        user.setUserName( "sethuram" );
+        user.setEmail( "sethuram@gmail.com" );
+
+        UserLoginStatus userLoginStatus = new UserLoginStatus( user, false );
+
+        when( apiRequestService.registerUserAndCheckIsAdmin( userDto ) )
+                .thenReturn( userLoginStatus );
+        // execute the post request
+        mockMvc.perform( post( "/register" )
+                .contentType( MediaType.APPLICATION_JSON )
+                .content( "{\"userId\":1,\"userName\":\"sethuram\",\"email\":\"sethuram@gmail.com\",\"picture\":\"http:url\"}" )
+        )
+                .andExpect( status().isOk() );
+
+    }
+
+    private String asJsonString(Object object) throws JsonProcessingException {
+        ObjectWriter objectWriter = new ObjectMapper().writer().withDefaultPrettyPrinter();
+        return objectWriter.writeValueAsString( object );
     }
 }

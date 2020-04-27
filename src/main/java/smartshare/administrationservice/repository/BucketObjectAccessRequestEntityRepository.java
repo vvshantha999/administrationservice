@@ -11,5 +11,5 @@ public interface BucketObjectAccessRequestEntityRepository extends JpaRepository
 
     List<BucketObjectAccessRequestEntity> findAllByUserId(int userId);
 
-    List<BucketObjectAccessRequestEntity> findAllByOwnerIdAndStatus(int ownerId, String status);
+    List<BucketObjectAccessRequestEntity> findAllByOwnerId(int ownerId);
 }

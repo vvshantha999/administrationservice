@@ -3,6 +3,7 @@ package smartshare.administrationservice.service;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 import smartshare.administrationservice.dto.Status;
 import smartshare.administrationservice.models.AdminRoleAggregate;
@@ -11,6 +12,7 @@ import smartshare.administrationservice.repository.AdminRoleAggregateRepository;
 import smartshare.administrationservice.repository.BucketAggregateRepository;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -37,8 +39,7 @@ public class BucketAdministrationService {
         log.info( "Inside createBucket" );
         BucketAggregate newBucket = new BucketAggregate();
         newBucket.setBucketName( bucketName );
-        // assuming update happens getting the current admin object
-        Optional<AdminRoleAggregate> adminRoleExists = adminRoleAggregateRepository.findFirstByOrderByAdminIdDesc();
+        Optional<AdminRoleAggregate> adminRoleExists = adminRoleAggregateRepository.findById( UUID.fromString( "5fc03087-d265-11e7-b8c6-83e29cd24f4c" ).toString() );
         System.out.println( "adminRoleExists------>" + adminRoleExists );
         if (adminRoleExists.isPresent()) newBucket.setAdminId( adminRoleExists.get().getAdminId() );
         else throw new IllegalArgumentException( "Admin Role is not Assigned" );
@@ -49,7 +50,10 @@ public class BucketAdministrationService {
         log.info( "Inside deleteBucket" );
 
         BucketAggregate bucketToBeDeleted = bucketAggregateRepository.findByBucketName( bucketName );
+        System.out.println( bucketToBeDeleted.getBucketObjects().size() );
+        bucketToBeDeleted.getBucketObjects().forEach( bucketObjectAggregate -> System.out.println( bucketObjectAggregate.getBucketObjectId() ) );
         if (bucketToBeDeleted.getBucketObjects().isEmpty()) {
+            System.out.println( "inside" );
             bucketAggregateRepository.delete( bucketToBeDeleted );
             status.setValue( Boolean.TRUE );
         } else {
@@ -60,14 +64,13 @@ public class BucketAdministrationService {
     }
 
 
-    //    @KafkaListener(groupId = "accessManagementBucketConsumer", topics = "AccessManagement")
+    @KafkaListener(groupId = "accessManagementBucketConsumer", topics = "BucketAccessManagement", containerFactory = "bucketAdministrationConsumerContainerFactory")
     public void consume(String bucket, ConsumerRecord record) {
 
         try {
             switch (record.key().toString()) {
                 case "createBucket":
                     log.info( "Consumed createBucket Event" );
-                    System.out.println();
                     BucketAggregate bucketInAccessManagementDb = this.createBucket( bucket );
                     log.info( "Bucket " + bucketInAccessManagementDb.getBucketName() + " Info is added in the Access Management " );
                     break;

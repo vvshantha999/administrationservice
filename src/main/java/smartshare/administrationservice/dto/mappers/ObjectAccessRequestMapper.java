@@ -4,7 +4,7 @@ package smartshare.administrationservice.dto.mappers;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import smartshare.administrationservice.dto.ObjectAccessRequestFromUi;
+import smartshare.administrationservice.dto.ObjectAccessRequest;
 import smartshare.administrationservice.models.*;
 import smartshare.administrationservice.repository.BucketAggregateRepository;
 import smartshare.administrationservice.repository.ObjectAccessEntityRepository;
@@ -49,15 +49,15 @@ public class ObjectAccessRequestMapper implements Mapper {
 
     @Override
     public <T, U> T map(U objectToBeTransformed) {
-        ObjectAccessRequestFromUi objectAccessRequestFromUi = (ObjectAccessRequestFromUi) objectToBeTransformed;
+        ObjectAccessRequest objectAccessRequest = (ObjectAccessRequest) objectToBeTransformed;
         BucketObjectAccessRequestEntity bucketObjectAccessRequest = new BucketObjectAccessRequestEntity();
-        UserAggregate user = Objects.requireNonNull( userAggregateRepository.findByUserName( objectAccessRequestFromUi.getUserName() ) );
-        UserAggregate owner = Objects.requireNonNull( userAggregateRepository.findByUserName( objectAccessRequestFromUi.getOwnerName() ) );
-        BucketAggregate bucket = Objects.requireNonNull( bucketAggregateRepository.findByBucketName( objectAccessRequestFromUi.getBucketName() ) );
-        ObjectAccessEntity accessEntity = Objects.requireNonNull( getObjectAccessEntityRecord( objectAccessRequestFromUi.getAccess() ) );
+        UserAggregate user = Objects.requireNonNull( userAggregateRepository.findByUserName( objectAccessRequest.getUserName() ) );
+        UserAggregate owner = Objects.requireNonNull( userAggregateRepository.findByUserName( objectAccessRequest.getOwnerName() ) );
+        BucketAggregate bucket = Objects.requireNonNull( bucketAggregateRepository.findByBucketName( objectAccessRequest.getBucketName() ) );
+        ObjectAccessEntity accessEntity = Objects.requireNonNull( getObjectAccessEntityRecord( objectAccessRequest.getAccess() ) );
         BucketObjectAggregate bucketObject = null;
         for (BucketObjectAggregate bucketObjectAggregate : bucket.getBucketObjects()) {
-            if (bucketObjectAggregate.getBucketObjectName() == objectAccessRequestFromUi.getObjectName())
+            if (bucketObjectAggregate.getBucketObjectName() == objectAccessRequest.getObjectName())
                 bucketObject = bucketObjectAggregate;
         }
         if (null != bucketObject) {
@@ -67,7 +67,7 @@ public class ObjectAccessRequestMapper implements Mapper {
             bucketObjectAccessRequest.setOwnerId( owner.getUserId() );
             bucketObjectAccessRequest.setUserId( user.getUserId() );
         } else
-            log.error( "Bucket Object Not found " + objectAccessRequestFromUi );
+            log.error( "Bucket Object Not found " + objectAccessRequest );
         return (T) bucketObjectAccessRequest;
     }
 }

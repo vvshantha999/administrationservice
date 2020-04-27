@@ -29,5 +29,9 @@ class ObjectAccessEntity {
         return access;
     }
 
+    public String getAccessInfo() {
+        return String.format( "Read : %s | Write : %s | Delete : %s", this.getRead(), this.getWrite(), this.getDelete() );
+    }
+
 
 }

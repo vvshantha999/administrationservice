@@ -3,6 +3,7 @@ package smartshare.administrationservice.service;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 import smartshare.administrationservice.dto.BucketObjectEvent;
 
@@ -22,8 +23,7 @@ public class BucketObjectEventAdministrationService {
     }
 
 
-
-    //    @KafkaListener(groupId = "accessManagementObjectConsumer", topics = "AccessManagement")
+    @KafkaListener(groupId = "accessManagementObjectConsumer", topics = "BucketObjectAccessManagement", containerFactory = "kafkaListenerContainerFactory")
     public void consume(BucketObjectEvent[] bucketObjects, ConsumerRecord record) {
 
         try {

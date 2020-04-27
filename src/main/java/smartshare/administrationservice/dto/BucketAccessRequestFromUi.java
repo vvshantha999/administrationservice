@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 public @Data
 class BucketAccessRequestFromUi {
 
-    private String userName;
+    private int userId;
     private String bucketName;
     private String access;
 

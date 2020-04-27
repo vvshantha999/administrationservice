@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public @Data
-class ObjectAccessRequestFromUi {
+class ObjectAccessRequest {
 
     private String userName;
     private String bucketName;
@@ -16,3 +16,4 @@ class ObjectAccessRequestFromUi {
     private String access;
 
 }
+

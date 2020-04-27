@@ -114,7 +114,7 @@ class BucketAdministrationServiceTest {
         bucket.setBucketId( 1 );
 
         when( bucketRepository.save( any() ) ).thenReturn( bucket );
-        when( adminRoleRepository.findFirstByOrderByAdminIdDesc() ).thenReturn( java.util.Optional.of( adminRole ) );
+        when( adminRoleRepository.findById( any() ) ).thenReturn( java.util.Optional.of( adminRole ) );
 
         BucketAggregate result = bucketAdministrationService.createBucket( singleRecord.value() );
         verify( bucketRepository ).save( any() );

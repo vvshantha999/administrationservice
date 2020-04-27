@@ -2,20 +2,25 @@ package smartshare.administrationservice.models;
 
 import javax.persistence.*;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 @Entity
 public class BucketAggregate {
 
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int bucketId;
+    @Column(unique = true)
     private String bucketName;
     private int adminId;
-    @OneToMany(mappedBy = "bucket", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+
+    @OneToMany(mappedBy = "bucket", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private Set<BucketObjectAggregate> bucketObjects = new HashSet<>();
 
-    @OneToMany(mappedBy = "bucket", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "bucket", orphanRemoval = true)
     private Set<BucketAccessingUser> bucketAccessingUsers = new HashSet<>();
 
 
@@ -60,12 +65,23 @@ public class BucketAggregate {
     }
 
     public BucketAggregate addBucketObject(String bucketObjectName, int ownerId) {
-        this.bucketObjects.add( new BucketObjectAggregate( bucketObjectName, this, ownerId ) );
+        final BucketObjectAggregate newBucketObject = new BucketObjectAggregate( bucketObjectName, this, ownerId );
+        this.bucketObjects.add( newBucketObject );
+        newBucketObject.setBucket( this );
         return this;
     }
 
     public Boolean removeBucketObject(String bucketObjectName, int ownerId) {
-        return this.bucketObjects.removeIf( bucketObjectAggregate -> bucketObjectAggregate.getBucketObjectName().equals( bucketObjectName ) && bucketObjectAggregate.getOwnerId() == ownerId );
+        Optional<BucketObjectAggregate> bucketObject = this.bucketObjects.stream()
+                .filter( bucketObjectAggregate -> bucketObjectAggregate.getBucketObjectName().equals( bucketObjectName ) && bucketObjectAggregate.getOwnerId() == ownerId )
+                .findAny();
+        if (bucketObject.isPresent()) {
+            bucketObject.get().setBucket( null );
+            this.bucketObjects.remove( bucketObject.get() );
+            // bucketObject.get().setAccessingUsers( null );
+            return true;
+        }
+        return false;
     }
 
     public boolean removeUsersRootBucketObject(int ownerId) {
@@ -73,12 +89,22 @@ public class BucketAggregate {
     }
 
     public BucketAggregate addBucketAccessingUsers(int userId, int bucketAccessId) {
-        this.bucketAccessingUsers.add( new BucketAccessingUser( this, userId, bucketAccessId ) );
+        BucketAccessingUser bucketAccessingUser = new BucketAccessingUser( this, userId, bucketAccessId );
+        this.bucketAccessingUsers.add( bucketAccessingUser );
+        bucketAccessingUser.setBucket( this );
         return this;
     }
 
-    public boolean removeBucketAccessingUsers(int userId) {
-        return this.bucketAccessingUsers.removeIf( bucketAccessingUser -> bucketAccessingUser.getUserId() == userId );
+    public Boolean removeBucketAccessingUsers(int userId) {
+        Optional<BucketAccessingUser> user = this.bucketAccessingUsers.stream()
+                .filter( bucketAccessingUser -> bucketAccessingUser.getUserId() == userId )
+                .findAny();
+        if (user.isPresent()) {
+            user.get().setBucket( null );
+            this.bucketAccessingUsers.remove( user.get() );
+            return true;
+        }
+        return false;
     }
 
     public Boolean isUserExistsInBucket(int userId) {
@@ -94,13 +120,6 @@ public class BucketAggregate {
 
     }
 
-//    public BucketObjectAggregate findBucketObjectByBucketObjectId(int id){
-//        for (BucketObjectAggregate bucketObjectAggregate : this.getBucketObjects()) {
-//            System.out.println("bucketObjectAggregate --- >"+bucketObjectAggregate.getBucketObjectId());
-//            if(bucketObjectAggregate.getBucketObjectId() == id) return bucketObjectAggregate;
-//        }
-//        return null;
-//    }
 
 
 }

@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 public @Data
 class UserBucketMapping {
 
+    private int userId;
     private String userName;
     private String bucketName;
 

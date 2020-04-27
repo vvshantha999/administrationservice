@@ -13,4 +13,8 @@ class BucketAccessEntity {
     private int bucketAccessId;
     private Boolean read = Boolean.FALSE;
     private Boolean write = Boolean.FALSE;
+
+    public String getAccessInfo() {
+        return String.format( "Read : %s + Write : %s", this.getRead(), this.getWrite() );
+    }
 }

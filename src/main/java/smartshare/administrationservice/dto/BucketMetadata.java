@@ -1,21 +1,25 @@
 package smartshare.administrationservice.dto;
 
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
-import smartshare.administrationservice.models.BucketAccessEntity;
 
 public @Data
 class BucketMetadata {
 
+    @JsonProperty("bucketName")
     private String bucketName;
+    @JsonProperty("read")
     private Boolean read;
+    @JsonProperty("write")
     private Boolean write;
 
-
-    public BucketMetadata(String bucketName, BucketAccessEntity access) {
+    @JsonCreator
+    public BucketMetadata(@JsonProperty("bucketName") String bucketName, @JsonProperty("read") Boolean read, @JsonProperty("write") Boolean write) {
         this.bucketName = bucketName;
-        this.read = access.getRead();
-        this.write = access.getWrite();
+        this.read = read;
+        this.write = write;
     }
 
 

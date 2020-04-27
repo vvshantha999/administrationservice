@@ -7,7 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-import smartshare.administrationservice.dto.ObjectAccessRequestFromUi;
+import smartshare.administrationservice.dto.ObjectAccessRequest;
 import smartshare.administrationservice.models.*;
 import smartshare.administrationservice.repository.BucketAggregateRepository;
 import smartshare.administrationservice.repository.BucketObjectAccessRequestEntityRepository;
@@ -46,7 +46,7 @@ class ObjectAccessRequestServiceTest {
 
         //setup mock ( if needed verify the mock)
 
-        ObjectAccessRequestFromUi objectAccessRequestFromUi = new ObjectAccessRequestFromUi();
+        ObjectAccessRequest objectAccessRequestFromUi = new ObjectAccessRequest();
         objectAccessRequestFromUi.setAccess( "read" );
         objectAccessRequestFromUi.setBucketName( "file.server.1" );
         objectAccessRequestFromUi.setObjectName( "sample.txt" );
@@ -129,7 +129,7 @@ class ObjectAccessRequestServiceTest {
         //setup mock ( if needed verify the mock)
 
 
-        ObjectAccessRequestFromUi objectAccessRequestFromUi = new ObjectAccessRequestFromUi();
+        ObjectAccessRequest objectAccessRequestFromUi = new ObjectAccessRequest();
         objectAccessRequestFromUi.setAccess( "read" );
         objectAccessRequestFromUi.setBucketName( "file.server.1" );
         objectAccessRequestFromUi.setObjectName( "sample.txt" );
@@ -192,7 +192,7 @@ class ObjectAccessRequestServiceTest {
         //setup mock ( if needed verify the mock)
 
 
-        ObjectAccessRequestFromUi objectAccessRequestFromUi = new ObjectAccessRequestFromUi();
+        ObjectAccessRequest objectAccessRequestFromUi = new ObjectAccessRequest();
         objectAccessRequestFromUi.setAccess( "read" );
         objectAccessRequestFromUi.setBucketName( "file.server.1" );
         objectAccessRequestFromUi.setObjectName( "sample.txt" );

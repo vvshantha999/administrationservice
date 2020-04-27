@@ -24,6 +24,7 @@ import org.springframework.kafka.support.serializer.JsonDeserializer;
 import org.springframework.kafka.test.EmbeddedKafkaBroker;
 import org.springframework.kafka.test.context.EmbeddedKafka;
 import org.springframework.kafka.test.utils.KafkaTestUtils;
+import org.springframework.messaging.Message;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import smartshare.administrationservice.dto.BucketObjectEvent;
 import smartshare.administrationservice.dto.SagaEvent;
@@ -124,10 +125,10 @@ class SagaEventHandlerServiceTest {
         assertNotNull( singleRecord );
         assertEquals( singleRecord.key(), "create" );
         assertEquals( singleRecord.value().getObjects().size(), 2 );
-        SagaEvent result = sagaEventHandlerService.consume( singleRecord.value(), singleRecord );
+        Message<SagaEvent> result = sagaEventHandlerService.consume( singleRecord.value(), singleRecord );
 
         // Reply
-        producer.send( new ProducerRecord<>( "sagaAccessResult", objectWriter.writeValueAsString( result ) ) );
+        producer.send( new ProducerRecord<>( "sagaAccessResult", objectWriter.writeValueAsString( result.getPayload() ) ) );
 
         ConsumerRecord<String, SagaEvent> replyRecord = KafkaTestUtils.getSingleRecord( consumer, "sagaAccessResult" );
         assertNotNull( replyRecord );

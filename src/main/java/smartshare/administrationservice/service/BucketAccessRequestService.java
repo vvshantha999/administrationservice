@@ -10,6 +10,7 @@ import smartshare.administrationservice.dto.BucketAccessRequestFromUi;
 import smartshare.administrationservice.dto.Status;
 import smartshare.administrationservice.dto.UserBucketMapping;
 import smartshare.administrationservice.dto.mappers.BucketAccessRequestMapper;
+import smartshare.administrationservice.dto.response.BucketAccessRequestDto;
 import smartshare.administrationservice.models.*;
 import smartshare.administrationservice.repository.BucketAccessEntityRepository;
 import smartshare.administrationservice.repository.BucketAccessRequestEntityRepository;
@@ -19,18 +20,20 @@ import smartshare.administrationservice.repository.UserAggregateRepository;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 
 @Slf4j
 @Service
 public class BucketAccessRequestService {
 
-    private BucketAccessRequestEntityRepository bucketAccessRequestEntityRepository;
-    private BucketAccessEntityRepository bucketAccessEntityRepository;
-    private BucketAggregateRepository bucketAggregateRepository;
-    private UserAggregateRepository userAggregateRepository;
-    private BucketAccessRequestMapper bucketAccessRequestMapper;
-    private Status status;
+    private final BucketAccessRequestEntityRepository bucketAccessRequestEntityRepository;
+    private final BucketAccessEntityRepository bucketAccessEntityRepository;
+    private final BucketAggregateRepository bucketAggregateRepository;
+    private final UserAggregateRepository userAggregateRepository;
+    private final BucketAccessRequestMapper bucketAccessRequestMapper;
+
+    private final Status status;
 
     @Autowired
     BucketAccessRequestService(
@@ -47,6 +50,7 @@ public class BucketAccessRequestService {
         this.bucketAggregateRepository = bucketAggregateRepository;
         this.userAggregateRepository = userAggregateRepository;
         this.bucketAccessRequestMapper = bucketAccessRequestMapper;
+
     }
 
 
@@ -56,7 +60,6 @@ public class BucketAccessRequestService {
         try {
             BucketAccessRequestEntity newBucketAccessRequest = bucketAccessRequestMapper.map( bucketAccessRequestFromUi );
             BucketAccessRequestEntity createdBucketAccessRequest = bucketAccessRequestEntityRepository.save( newBucketAccessRequest );
-            System.out.println( "createdBucketAccessRequest------------->" + createdBucketAccessRequest );
             return Boolean.TRUE;
         } catch (Exception e) {
             log.error( "Exception while creating bucket Access Request" + e );
@@ -133,7 +136,7 @@ public class BucketAccessRequestService {
     private Boolean approveByRequestType(BucketAccessRequestEntity bucketAccessRequest) {
         log.info( "Inside updateOrInsertAccess" );
         Optional<BucketAccessEntity> accessObject = bucketAccessEntityRepository.findById( bucketAccessRequest.getBucketAccessId() );
-        if (accessObject.isPresent() && accessObject.get().getRead())
+        if (accessObject.isPresent() && Boolean.TRUE.equals( accessObject.get().getRead() ))
             return approveReadBucketAccessRequest( bucketAccessRequest );
         return approveWriteBucketAccessRequest( bucketAccessRequest );
     }
@@ -143,7 +146,7 @@ public class BucketAccessRequestService {
     public Boolean approveBucketAccessRequest(BucketAccessRequestEntity bucketAccessRequest) {
         log.info( "Inside approveBucketAccessRequest" );
         try {
-            if (approveByRequestType( bucketAccessRequest.approve() )) {
+            if (Boolean.TRUE.equals( approveByRequestType( bucketAccessRequest.approve() ) )) {
                 bucketAccessRequestEntityRepository.save( bucketAccessRequest );
                 return Boolean.TRUE;
             }
@@ -171,16 +174,33 @@ public class BucketAccessRequestService {
         log.info( "Inside addUserToBucketByBucketAdmin" );
         try {
             BucketAggregate bucket = Objects.requireNonNull( bucketAggregateRepository.findByBucketName( addUserFromUiToBucket.getBucketName() ) );
-            UserAggregate user = Objects.requireNonNull( userAggregateRepository.findByUserName( addUserFromUiToBucket.getUserName() ) );
-            BucketAccessEntity readAndWriteAccess = Objects.requireNonNull( bucketAccessEntityRepository.findByReadAndWrite( true, true ) );
-            bucket.addBucketAccessingUsers( user.getUserId(), readAndWriteAccess.getBucketAccessId() );
-            bucket.addBucketObject( user.getUserName() + "/", user.getUserId() );
-            bucketAggregateRepository.save( bucket );
-            return Boolean.TRUE;
+            Optional<UserAggregate> user = Objects.requireNonNull( userAggregateRepository.findById( addUserFromUiToBucket.getUserId() ) );
+            if (user.isPresent()) {
+                BucketAccessEntity readAndWriteAccess = Objects.requireNonNull( bucketAccessEntityRepository.findByReadAndWrite( true, true ) );
+                bucket.addBucketAccessingUsers( user.get().getUserId(), readAndWriteAccess.getBucketAccessId() );
+                bucket.addBucketObject( user.get().getUserName() + "/", user.get().getUserId() );
+                bucket.getBucketAccessingUsers().forEach( bucketAccessingUser -> {
+                    System.out.println( "+ before " + bucketAccessingUser.getUserId() + " " + bucketAccessingUser.getBucketAccessId() );
+                } );
+                bucketAggregateRepository.save( bucket );
+                bucket.getBucketAccessingUsers().forEach( bucketAccessingUser -> {
+                    System.out.println( "+ after" + bucketAccessingUser.getUserId() + " " + bucketAccessingUser.getBucketAccessId() );
+                } );
+
+                return Boolean.TRUE;
+            }
+
         } catch (Exception e) {
             log.error( "Exception while adding user to the Bucket by admin" + e.getMessage() );
         }
         return Boolean.FALSE;
+    }
+
+    public Boolean addUsersToBucketByBucketAdmin(List<UserBucketMapping> addUsersFromUiToBucket) {
+        List<Boolean> results = addUsersFromUiToBucket.stream()
+                .map( this::addUserToBucketByBucketAdmin )
+                .collect( Collectors.toList() );
+        return !results.contains( false );
     }
 
 
@@ -188,46 +208,56 @@ public class BucketAccessRequestService {
         log.info( "Inside removeUserToBucketByBucketAdmin" );
         try {
             BucketAggregate bucket = Objects.requireNonNull( bucketAggregateRepository.findByBucketName( removeUserFromBucket.getBucketName() ) );
-            UserAggregate user = Objects.requireNonNull( userAggregateRepository.findByUserName( removeUserFromBucket.getUserName() ) );
-            Boolean userExistsInBucket = bucket.isUserExistsInBucket( user.getUserId() );
-            System.out.println( "userExistsInBucket--------->" + userExistsInBucket );
-            bucket.getBucketAccessingUsers().forEach( bucketAccessingUser ->
-                    System.out.println( "new Bucket Aggregate---before---->" + bucketAccessingUser.getUserId() + " " +
-                            bucketAccessingUser.getBucketAccessId() + " " + bucketAccessingUser.getBucket().getBucketName()
-                    )
-            );
-            bucket.getBucketObjects().forEach( bucketObjectAggregate ->
-                    System.out.println( "new Bucket object Aggregate---before---->" + bucketObjectAggregate.getBucketObjectName() + " " +
-                            bucketObjectAggregate.getOwnerId() + " " + bucketObjectAggregate.getAccessingUsers().size()
-                    )
-            );
-            int bucketObjectsCount = bucket.getBucketObjects( user.getUserId() );
-            System.out.println( "bucketObjectsCount--------->" + bucketObjectsCount );
-            if (userExistsInBucket && bucketObjectsCount == 1) {
-                boolean removedUser = bucket.removeBucketAccessingUsers( user.getUserId() );
-                boolean removedObject = bucket.removeBucketObject( user.getUserName() + "/", user.getUserId() );
-                if (removedUser && removedObject) {
-                    bucketAggregateRepository.save( bucket );
+            Optional<UserAggregate> userExists = Objects.requireNonNull( userAggregateRepository.findById( removeUserFromBucket.getUserId() ) );
+            if (userExists.isPresent()) {
+                UserAggregate user = userExists.get();
+                Boolean userExistsInBucket = bucket.isUserExistsInBucket( user.getUserId() );
+                System.out.println( "userExistsInBucket--------->" + userExistsInBucket );
+                int bucketObjectsCount = bucket.getBucketObjects( user.getUserId() );
+                System.out.println( "bucketObjectsCount--------->" + bucketObjectsCount );
+                if (userExistsInBucket && bucketObjectsCount <= 1) {
+                    System.out.println( "inside" );
+                    final Boolean removedAccessingUser = bucket.removeBucketAccessingUsers( user.getUserId() );
+                    System.out.println( "removedAccessingUser----->" + removedAccessingUser );
+                    final Boolean removeBucketObject = bucket.removeBucketObject( user.getUserName() + "/", user.getUserId() );
+                    System.out.println( "removeBucketObject----->" + removeBucketObject );
+                    if (removedAccessingUser && removeBucketObject) bucketAggregateRepository.save( bucket );
                     status.setValue( Boolean.TRUE );
+                } else {
+                    status.setValue( Boolean.FALSE );
+                    status.setReasonForFailure( "Either User not exists or user has more Bucket Objects which has to be deleted before removing the user" );
                 }
-            } else {
-                System.out.println( "inside" );
-                status.setValue( Boolean.FALSE );
-                status.setReasonForFailure( "Either User not exists or user has more Bucket Objects which has to be deleted before removing the user" );
             }
         } catch (Exception e) {
             log.error( "Exception while removing user from the Bucket by admin" + e );
             status.setValue( Boolean.FALSE );
         }
+        System.out.println( "status ---->" + status );
         return status;
     }
 
-    public List<BucketAccessRequestEntity> getBucketAccessRequestForAdmin() {
-        return bucketAccessRequestEntityRepository.findAll(); // not sure of this
+
+    private BucketAccessRequestDto bucketAccessRequestDtoMapper(BucketAccessRequestEntity bucketAccessRequestEntity) {
+        BucketAccessRequestDto bucketAccessRequestDto = new BucketAccessRequestDto();
+        userAggregateRepository.findById( bucketAccessRequestEntity.getUserId() )
+                .ifPresent( userAggregate -> bucketAccessRequestDto.setUserName( userAggregate.getUserName() ) );
+        bucketAggregateRepository.findById( bucketAccessRequestEntity.getBucketId() )
+                .ifPresent( bucketAggregate -> bucketAccessRequestDto.setBucketName( bucketAggregate.getBucketName() ) );
+        bucketAccessEntityRepository.findById( bucketAccessRequestEntity.getBucketAccessId() )
+                .ifPresent( bucketAccessEntity -> bucketAccessRequestDto.setBucketAccessType( bucketAccessEntity.getAccessInfo() ) );
+        bucketAccessRequestDto.setStatus( bucketAccessRequestEntity.getStatus() );
+        return bucketAccessRequestDto;
+    }
+
+    public List<BucketAccessRequestDto> getBucketAccessRequestForAdmin() {
+        log.info( "Inside getBucketAccessRequestForAdmin" );
+        return bucketAccessRequestEntityRepository.findAll().stream()
+                .map( this::bucketAccessRequestDtoMapper ).collect( Collectors.toList() );
     }
 
     public List<BucketAccessRequestEntity> getBucketAccessRequestForUser(String userName) {
         return bucketAccessRequestEntityRepository.findAllByUserId( userAggregateRepository.findByUserName( userName ).getUserId() );
     }
+
 
 }
