@@ -161,7 +161,7 @@ class BucketAccessRequestControllerTest {
         BucketAccessRequestEntity bucketAccessRequest = new BucketAccessRequestEntity();
         Status status = new Status();
         status.setValue( Boolean.TRUE );
-        when( bucketAccessRequestService.deleteBucketAccessRequest( any() ) ).thenReturn( status );
+        when( bucketAccessRequestService.deleteBucketAccessRequests( any() ) ).thenReturn( status );
 
         // execute the post request
         mockMvc.perform( delete( "/bucket/deleteAccessRequest" )
@@ -182,7 +182,7 @@ class BucketAccessRequestControllerTest {
         Status status = new Status();
         status.setValue( Boolean.FALSE );
         status.setReasonForFailure( HttpStatus.NOT_FOUND.getReasonPhrase() );
-        when( bucketAccessRequestService.deleteBucketAccessRequest( any() ) ).thenReturn( status );
+        when( bucketAccessRequestService.deleteBucketAccessRequests( any() ) ).thenReturn( status );
 
         // execute the post request
         mockMvc.perform( delete( "/bucket/deleteAccessRequest" )
@@ -203,7 +203,7 @@ class BucketAccessRequestControllerTest {
         Status status = new Status();
         status.setValue( Boolean.FALSE );
         status.setReasonForFailure( HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase() );
-        when( bucketAccessRequestService.deleteBucketAccessRequest( any() ) ).thenReturn( status );
+        when( bucketAccessRequestService.deleteBucketAccessRequests( any() ) ).thenReturn( status );
 
         // execute the post request
         mockMvc.perform( delete( "/bucket/deleteAccessRequest" )

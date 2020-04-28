@@ -32,6 +32,7 @@ public class BucketAccessRequestController {
         return bucketAccessRequestService.getBucketAccessRequestForAdmin();
     }
 
+    // not sure where used
     @GetMapping(value = "/bucket/bucketAccessRequestForUser")
     public List<BucketAccessRequestEntity> getBucketAccessRequestForUser(@RequestParam("userName") String userName) {
         log.info( "Inside getBucketAccessRequestForUser" );
@@ -39,36 +40,36 @@ public class BucketAccessRequestController {
     }
 
     @PostMapping(value = "/bucket/createAccessRequest")
-    public ResponseEntity createBucketAccessRequest(@RequestBody BucketAccessRequestFromUi bucketAccessRequestFromUi) {
+    public ResponseEntity<Boolean> createBucketAccessRequest(@RequestBody BucketAccessRequestFromUi bucketAccessRequestFromUi) {
         log.info( "Inside createBucketAccessRequest" );
         return Boolean.TRUE.equals( bucketAccessRequestService.createBucketAccessRequest( bucketAccessRequestFromUi ) ) ?
                 new ResponseEntity<>( true, HttpStatus.CREATED ) : new ResponseEntity<>( false, HttpStatus.BAD_REQUEST );
     }
 
     @PostMapping(value = "/bucket/approveAccessRequest")
-    public ResponseEntity<HttpStatus> approveBucketAccessRequest(@RequestBody BucketAccessRequestEntity bucketAccessRequest) {
+    public ResponseEntity<Boolean> approveBucketAccessRequest(@RequestBody BucketAccessRequestDto bucketAccessRequestDto) {
         log.info( "Inside createBucketAccessRequest" );
-        return Boolean.TRUE.equals( bucketAccessRequestService.approveBucketAccessRequest( bucketAccessRequest ) ) ?
-                new ResponseEntity<>( HttpStatus.CREATED ) : new ResponseEntity<>( HttpStatus.BAD_REQUEST );
+        return Boolean.TRUE.equals( bucketAccessRequestService.approveBucketAccessRequest( bucketAccessRequestDto ) ) ?
+                new ResponseEntity<>( true, HttpStatus.CREATED ) : new ResponseEntity<>( false, HttpStatus.BAD_REQUEST );
     }
 
     @PutMapping(value = "/bucket/rejectAccessRequest")
-    public ResponseEntity<HttpStatus> rejectBucketAccessRequest(@RequestBody BucketAccessRequestEntity bucketAccessRequest) {
+    public ResponseEntity<Boolean> rejectBucketAccessRequest(@RequestBody BucketAccessRequestDto bucketAccessRequestDto) {
         log.info( "Inside rejectBucketAccessRequest" );
-        return Boolean.TRUE.equals( bucketAccessRequestService.rejectBucketAccessRequest( bucketAccessRequest ) ) ?
-                new ResponseEntity<>( HttpStatus.OK ) : new ResponseEntity<>( HttpStatus.BAD_REQUEST );
+        return Boolean.TRUE.equals( bucketAccessRequestService.rejectBucketAccessRequest( bucketAccessRequestDto ) ) ?
+                new ResponseEntity<>( true, HttpStatus.OK ) : new ResponseEntity<>( false, HttpStatus.BAD_REQUEST );
     }
 
     @DeleteMapping(value = "/bucket/deleteAccessRequest")
-    public ResponseEntity<HttpStatus> deleteBucketAccessRequest(@RequestBody BucketAccessRequestEntity bucketAccessRequestTobeDeleted) {
+    public ResponseEntity<Boolean> deleteBucketAccessRequests(@RequestBody List<BucketAccessRequestDto> bucketAccessRequestDtos) {
         log.info( "Inside deleteBucketAccessRequest" );
-        Status deleteBucketAccessRequestResult = bucketAccessRequestService.deleteBucketAccessRequest( bucketAccessRequestTobeDeleted );
+        Status deleteBucketAccessRequestResult = bucketAccessRequestService.deleteBucketAccessRequests( bucketAccessRequestDtos );
         if (Boolean.TRUE.equals( deleteBucketAccessRequestResult.getValue() )) {
-            return new ResponseEntity<>( HttpStatus.OK );
+            return new ResponseEntity<>( true, HttpStatus.OK );
         }
         return (deleteBucketAccessRequestResult.getReasonForFailure().equals( HttpStatus.NOT_FOUND.getReasonPhrase() )) ?
                 ResponseEntity.notFound().build() :
-                new ResponseEntity<>( HttpStatus.INTERNAL_SERVER_ERROR );
+                new ResponseEntity<>( false, HttpStatus.INTERNAL_SERVER_ERROR );
 
     }
 

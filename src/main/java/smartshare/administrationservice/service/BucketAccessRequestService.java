@@ -67,23 +67,27 @@ public class BucketAccessRequestService {
         return Boolean.FALSE;
     }
 
-    public Status deleteBucketAccessRequest(BucketAccessRequestEntity bucketAccessRequestTobeDeleted) {
+    public Status deleteBucketAccessRequests(List<BucketAccessRequestDto> bucketAccessRequestDtos) {
         try {
-            Optional<BucketAccessRequestEntity> doesBucketAccessRequestWhichWillBeDeletedExists = bucketAccessRequestEntityRepository.findById( bucketAccessRequestTobeDeleted.getId() );
-            if (doesBucketAccessRequestWhichWillBeDeletedExists.isPresent()) {
-                bucketAccessRequestEntityRepository.delete( bucketAccessRequestTobeDeleted );
-                status.setValue( Boolean.TRUE );
-            } else {
+            List<Boolean> deletedResults = bucketAccessRequestDtos.stream()
+                    .map( bucketAccessRequestDto -> bucketAccessRequestEntityRepository.findById( bucketAccessRequestDto.getId() ) )
+                    .map( bucketAccessRequestEntity -> {
+                        if (bucketAccessRequestEntity.isPresent()) {
+                            bucketAccessRequestEntityRepository.delete( bucketAccessRequestEntity.get() );
+                            return Boolean.TRUE;
+                        } else return Boolean.FALSE;
+                    } )
+                    .collect( Collectors.toList() );
+            if (deletedResults.contains( Boolean.FALSE )) {
                 status.setValue( Boolean.FALSE );
                 status.setReasonForFailure( HttpStatus.NOT_FOUND.getReasonPhrase() );
-            }
+            } else status.setValue( Boolean.TRUE );
         } catch (Exception e) {
             log.error( "Exception while deleting the bucket access request by admin" + e.getMessage() );
             status.setValue( Boolean.FALSE );
             status.setReasonForFailure( HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase() );
         }
         return status;
-
     }
 
     private Boolean approveReadBucketAccessRequest(BucketAccessRequestEntity bucketAccessRequest) {
@@ -143,13 +147,15 @@ public class BucketAccessRequestService {
 
 
     @Transactional
-    public Boolean approveBucketAccessRequest(BucketAccessRequestEntity bucketAccessRequest) {
+    public Boolean approveBucketAccessRequest(BucketAccessRequestDto bucketAccessRequestDto) {
         log.info( "Inside approveBucketAccessRequest" );
         try {
-            if (Boolean.TRUE.equals( approveByRequestType( bucketAccessRequest.approve() ) )) {
-                bucketAccessRequestEntityRepository.save( bucketAccessRequest );
+            Optional<BucketAccessRequestEntity> bucketAccessRequest = this.bucketAccessRequestEntityRepository.findById( bucketAccessRequestDto.getId() );
+            if (bucketAccessRequest.isPresent() && Boolean.TRUE.equals( approveByRequestType( bucketAccessRequest.get().approve() ) )) {
+                bucketAccessRequestEntityRepository.save( bucketAccessRequest.get() );
                 return Boolean.TRUE;
             }
+
         } catch (Exception e) {
             log.error( "Exception while approving the Bucket Access Request" + e.getMessage() );
         }
@@ -157,12 +163,15 @@ public class BucketAccessRequestService {
     }
 
 
-    public Boolean rejectBucketAccessRequest(BucketAccessRequestEntity bucketAccessRequest) {
+    public Boolean rejectBucketAccessRequest(BucketAccessRequestDto bucketAccessRequestDto) {
         log.info( "Inside rejectBucketAccessRequest" );
         try {
-            bucketAccessRequest.reject();
-            bucketAccessRequestEntityRepository.save( bucketAccessRequest );
-            return Boolean.TRUE;
+            Optional<BucketAccessRequestEntity> bucketAccessRequest = this.bucketAccessRequestEntityRepository.findById( bucketAccessRequestDto.getId() );
+            if (bucketAccessRequest.isPresent()) {
+                bucketAccessRequest.get().reject();
+                bucketAccessRequestEntityRepository.save( bucketAccessRequest.get() );
+                return Boolean.TRUE;
+            }
         } catch (Exception e) {
             log.error( "Exception while rejecting the Bucket Access Request" + e.getMessage() );
         }
@@ -239,6 +248,7 @@ public class BucketAccessRequestService {
 
     private BucketAccessRequestDto bucketAccessRequestDtoMapper(BucketAccessRequestEntity bucketAccessRequestEntity) {
         BucketAccessRequestDto bucketAccessRequestDto = new BucketAccessRequestDto();
+        bucketAccessRequestDto.setId( bucketAccessRequestEntity.getId() );
         userAggregateRepository.findById( bucketAccessRequestEntity.getUserId() )
                 .ifPresent( userAggregate -> bucketAccessRequestDto.setUserName( userAggregate.getUserName() ) );
         bucketAggregateRepository.findById( bucketAccessRequestEntity.getBucketId() )

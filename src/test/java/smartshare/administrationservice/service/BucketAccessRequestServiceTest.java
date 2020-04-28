@@ -10,9 +10,11 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import smartshare.administrationservice.dto.BucketAccessRequestFromUi;
 import smartshare.administrationservice.dto.Status;
 import smartshare.administrationservice.dto.UserBucketMapping;
+import smartshare.administrationservice.dto.response.BucketAccessRequestDto;
 import smartshare.administrationservice.models.*;
 import smartshare.administrationservice.repository.*;
 
+import java.util.Collections;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -93,6 +95,7 @@ class BucketAccessRequestServiceTest {
         verify( adminRoleAggregateRepository ).findById( any() );
         verify( bucketAccessRequestEntityRepository ).save( any() );
 
+
     }
 
 
@@ -101,8 +104,14 @@ class BucketAccessRequestServiceTest {
     void approveBucketAccessRequest_read() {
         //setup mock ( if needed verify the mock)
 
-        BucketAccessRequestEntity bucketAccessRequest = new BucketAccessRequestEntity();
+        BucketAccessRequestDto bucketAccessRequestDto = new BucketAccessRequestDto();
 
+        bucketAccessRequestDto.setId( 1 );
+        bucketAccessRequestDto.setStatus( "In Progress" );
+        bucketAccessRequestDto.setBucketAccessType( "Read" );
+        bucketAccessRequestDto.setUserName( "sethuram" );
+
+        BucketAccessRequestEntity bucketAccessRequest = new BucketAccessRequestEntity();
         bucketAccessRequest.setBucketId( 1 );
         bucketAccessRequest.setUserId( 1 );
         bucketAccessRequest.setBucketAccessId( 2 );
@@ -117,6 +126,8 @@ class BucketAccessRequestServiceTest {
         bucket.setAdminId( 1 );
         bucket.setBucketId( 1 );
 
+        when( bucketAccessRequestEntityRepository.findById( bucketAccessRequestDto.getId() ) )
+                .thenReturn( Optional.of( bucketAccessRequest ) );
         when( bucketAccessEntityRepository.findById( bucketAccessRequest.getBucketAccessId() ) )
                 .thenReturn( Optional.of( bucketAccessEntity ) );
         when( bucketAggregateRepository.findById( bucketAccessRequest.getBucketId() ) ).thenReturn( Optional.of( bucket ) );
@@ -124,7 +135,7 @@ class BucketAccessRequestServiceTest {
         when( bucketAggregateRepository.save( any() ) ).thenReturn( bucket );
 
         // execute the call
-        Boolean result = bucketAccessRequestService.approveBucketAccessRequest( bucketAccessRequest );
+        Boolean result = bucketAccessRequestService.approveBucketAccessRequest( bucketAccessRequestDto );
 
         // assert  the results
 
@@ -136,6 +147,13 @@ class BucketAccessRequestServiceTest {
     @DisplayName("TEST approveBucketAccessRequest - write scenario [ new Entry ] - SUCCESS")
     void approveBucketAccessRequest_write() {
         //setup mock ( if needed verify the mock)
+
+        BucketAccessRequestDto bucketAccessRequestDto = new BucketAccessRequestDto();
+
+        bucketAccessRequestDto.setId( 1 );
+        bucketAccessRequestDto.setStatus( "In Progress" );
+        bucketAccessRequestDto.setBucketAccessType( "Read" );
+        bucketAccessRequestDto.setUserName( "sethuram" );
 
         BucketAccessRequestEntity bucketAccessRequest = new BucketAccessRequestEntity();
 
@@ -162,8 +180,9 @@ class BucketAccessRequestServiceTest {
         defaultBucketAccessEntity.setWrite( true );
         defaultBucketAccessEntity.setRead( true );
 
-        when( bucketAccessEntityRepository.findById( bucketAccessRequest.getBucketAccessId() ) )
-                .thenReturn( Optional.of( bucketAccessEntity ) );
+
+        when( bucketAccessRequestEntityRepository.findById( bucketAccessRequestDto.getId() ) )
+                .thenReturn( Optional.of( bucketAccessRequest ) );
         when( bucketAggregateRepository.findById( bucketAccessRequest.getBucketId() ) ).thenReturn( Optional.of( bucket ) );
 
         when( userAggregateRepository.findById( any() ) ).thenReturn( Optional.of( user ) );
@@ -173,7 +192,7 @@ class BucketAccessRequestServiceTest {
         when( bucketAccessEntityRepository.findByReadAndWrite( true, true ) ).thenReturn( defaultBucketAccessEntity );
 
         // execute the call
-        Boolean result = bucketAccessRequestService.approveBucketAccessRequest( bucketAccessRequest );
+        Boolean result = bucketAccessRequestService.approveBucketAccessRequest( bucketAccessRequestDto );
 
         // assert  the results
 
@@ -188,6 +207,13 @@ class BucketAccessRequestServiceTest {
     @DisplayName("TEST approveBucketAccessRequest - write scenario [ update Entry ] - SUCCESS")
     void approveBucketAccessRequest_write_update() {
         //setup mock ( if needed verify the mock)
+
+        BucketAccessRequestDto bucketAccessRequestDto = new BucketAccessRequestDto();
+
+        bucketAccessRequestDto.setId( 1 );
+        bucketAccessRequestDto.setStatus( "In Progress" );
+        bucketAccessRequestDto.setBucketAccessType( "Read" );
+        bucketAccessRequestDto.setUserName( "sethuram" );
 
         BucketAccessRequestEntity bucketAccessRequest = new BucketAccessRequestEntity();
 
@@ -215,6 +241,9 @@ class BucketAccessRequestServiceTest {
         defaultBucketAccessEntity.setWrite( true );
         defaultBucketAccessEntity.setRead( true );
 
+        when( bucketAccessRequestEntityRepository.findById( bucketAccessRequestDto.getId() ) )
+                .thenReturn( Optional.of( bucketAccessRequest ) );
+
         when( bucketAccessEntityRepository.findById( bucketAccessRequest.getBucketAccessId() ) )
                 .thenReturn( Optional.of( bucketAccessEntity ) );
         when( bucketAggregateRepository.findById( bucketAccessRequest.getBucketId() ) ).thenReturn( Optional.of( bucket ) );
@@ -226,7 +255,7 @@ class BucketAccessRequestServiceTest {
         when( bucketAccessEntityRepository.findByReadAndWrite( true, true ) ).thenReturn( defaultBucketAccessEntity );
 
         // execute the call
-        Boolean result = bucketAccessRequestService.approveBucketAccessRequest( bucketAccessRequest );
+        Boolean result = bucketAccessRequestService.approveBucketAccessRequest( bucketAccessRequestDto );
 
         // assert  the results
 
@@ -244,6 +273,12 @@ class BucketAccessRequestServiceTest {
 
         //setup mock ( if needed verify the mock)
 
+        BucketAccessRequestDto bucketAccessRequestDto = new BucketAccessRequestDto();
+
+        bucketAccessRequestDto.setId( 1 );
+        bucketAccessRequestDto.setStatus( "In Progress" );
+        bucketAccessRequestDto.setBucketAccessType( "Read" );
+        bucketAccessRequestDto.setUserName( "sethuram" );
 
         BucketAccessRequestEntity bucketAccessRequest = new BucketAccessRequestEntity();
 
@@ -256,11 +291,13 @@ class BucketAccessRequestServiceTest {
         bucketAccessEntity.setWrite( true );
         bucketAccessEntity.setRead( false );
 
+        when( bucketAccessRequestEntityRepository.findById( bucketAccessRequestDto.getId() ) )
+                .thenReturn( Optional.of( bucketAccessRequest ) );
 
         when( bucketAccessRequestEntityRepository.save( any() ) ).thenReturn( bucketAccessRequest );
 
         // execute the call
-        Boolean result = bucketAccessRequestService.rejectBucketAccessRequest( bucketAccessRequest );
+        Boolean result = bucketAccessRequestService.rejectBucketAccessRequest( bucketAccessRequestDto );
 
         // assert  the results
 
@@ -385,6 +422,12 @@ class BucketAccessRequestServiceTest {
     void deleteBucketAccessRequest() {
 
         //setup mock ( if needed verify the mock)
+        BucketAccessRequestDto bucketAccessRequestDto = new BucketAccessRequestDto();
+
+        bucketAccessRequestDto.setId( 1 );
+        bucketAccessRequestDto.setStatus( "In Progress" );
+        bucketAccessRequestDto.setBucketAccessType( "Read" );
+        bucketAccessRequestDto.setUserName( "sethuram" );
 
         BucketAccessRequestEntity bucketAccessRequest = new BucketAccessRequestEntity();
 
@@ -394,10 +437,12 @@ class BucketAccessRequestServiceTest {
         bucketAccessRequest.setAdminRoleId( UUID.fromString( "5fc03087-d265-11e7-b8c6-83e29cd24f4c" ).toString() );
 
 
+        when( bucketAccessRequestEntityRepository.findById( bucketAccessRequestDto.getId() ) )
+                .thenReturn( Optional.of( bucketAccessRequest ) );
         when( bucketAccessRequestEntityRepository.findById( any() ) ).thenReturn( Optional.of( bucketAccessRequest ) );
 
         // execute the call
-        Status result = bucketAccessRequestService.deleteBucketAccessRequest( bucketAccessRequest );
+        Status result = bucketAccessRequestService.deleteBucketAccessRequests( Collections.singletonList( bucketAccessRequestDto ) );
 
         assertEquals( result.getValue(), true );
         verify( bucketAccessRequestEntityRepository ).delete( any() );
