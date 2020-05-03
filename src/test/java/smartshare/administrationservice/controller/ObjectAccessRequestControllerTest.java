@@ -42,9 +42,9 @@ class ObjectAccessRequestControllerTest {
     void createObjectAccessRequest() throws Exception {
         // set up the mock service
 
-        ObjectAccessRequest objectAccessRequest1 = new ObjectAccessRequest( "sethuram", "file.server.1", "folder", "owner", "read" );
-        ObjectAccessRequest objectAccessRequest2 = new ObjectAccessRequest( "sethuram", "file.server.1", "folder/sample1.txt", "owner", "read" );
-        ObjectAccessRequest objectAccessRequest3 = new ObjectAccessRequest( "sethuram", "file.server.1", "folder/sample2.txt", "owner", "read" );
+        ObjectAccessRequest objectAccessRequest1 = new ObjectAccessRequest( "sethuram", "file.server.1", "folder", 1, "read" );
+        ObjectAccessRequest objectAccessRequest2 = new ObjectAccessRequest( "sethuram", "file.server.1", "folder/sample1.txt", 1, "read" );
+        ObjectAccessRequest objectAccessRequest3 = new ObjectAccessRequest( "sethuram", "file.server.1", "folder/sample2.txt", 1, "read" );
         List<ObjectAccessRequest> objectAccessRequests = new ArrayList<>();
         objectAccessRequests.add( objectAccessRequest1 );
         objectAccessRequests.add( objectAccessRequest2 );
@@ -68,7 +68,7 @@ class ObjectAccessRequestControllerTest {
         BucketObjectAccessRequestEntity objectAccessRequest = new BucketObjectAccessRequestEntity();
         // difficulty in creating mocks can change this stub for integration testing
 
-        when( bucketObjectAccessRequestService.deleteBucketObjectAccessRequest( any() ) )
+        when( bucketObjectAccessRequestService.deleteBucketObjectAccessRequests( any() ) )
                 .thenReturn( true );
 
         // execute the post request
@@ -84,7 +84,7 @@ class ObjectAccessRequestControllerTest {
     @DisplayName("PUT /object/approveAccessRequest - SUCCESS")
     void approveObjectAccessRequest() throws Exception {
         BucketObjectAccessRequestEntity objectAccessRequest = new BucketObjectAccessRequestEntity();
-        when( bucketObjectAccessRequestService.approveBucketObjectAccessRequest( any() ) )
+        when( bucketObjectAccessRequestService.approveBucketObjectAccessRequests( any() ) )
                 .thenReturn( true );
 
         // execute the post request
@@ -100,7 +100,7 @@ class ObjectAccessRequestControllerTest {
     @DisplayName("PUT /object/rejectAccessRequest - SUCCESS")
     void rejectObjectAccessRequest() throws Exception {
         BucketObjectAccessRequestEntity objectAccessRequest = new BucketObjectAccessRequestEntity();
-        when( bucketObjectAccessRequestService.rejectObjectAccessRequest( any() ) )
+        when( bucketObjectAccessRequestService.rejectBucketObjectAccessRequests( any() ) )
                 .thenReturn( true );
 
         // execute the post request

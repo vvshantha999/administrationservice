@@ -14,6 +14,8 @@ class BucketObjectEvent {
     private String objectName;
     private String ownerName;
     private String userName;
+    private int ownerId;
+    private int userId;
     private String status = StatusConstants.INPROGRESS.toString();
 
 
@@ -23,13 +25,17 @@ class BucketObjectEvent {
             @JsonProperty("objectName") String objectName,
             @JsonProperty("ownerName") String ownerName,
             @JsonProperty("userName") String userName,
-            @JsonProperty("status") String status
+            @JsonProperty("status") String status,
+            @JsonProperty("ownerId") int ownerId,
+            @JsonProperty("userId") int userId
     ) {
         this.bucketName = bucketName;
         this.objectName = objectName;
         this.ownerName = ownerName;
         this.userName = userName;
         this.status = status;
+        this.ownerId = ownerId;
+        this.userId = userId;
     }
 
     public BucketObjectEvent duplicate() {

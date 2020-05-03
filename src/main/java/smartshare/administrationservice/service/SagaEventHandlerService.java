@@ -69,15 +69,18 @@ public class SagaEventHandlerService {
             switch (record.key().toString()) {
                 case "create":
                     log.info( "Consumed create saga Events" );
+                    final SagaEvent eventHandledResult = this.createEventHandler( sagaEvent );
+                    System.out.println( "---eventHandledResult-------->" + eventHandledResult );
                     return MessageBuilder
-                            .withPayload( this.createEventHandler( sagaEvent ) )
+                            .withPayload( eventHandledResult )
                             .setHeader( KafkaHeaders.TOPIC, "sagaAccessResult" )
                             .setHeader( KafkaHeaders.MESSAGE_KEY, record.key() )
                             .build();
                 case "delete":
                     log.info( "Consumed delete saga Events" );
+                    final SagaEvent deleteEventHandledResult = this.createEventHandler( sagaEvent );
                     return MessageBuilder
-                            .withPayload( this.deleteEventHandler( sagaEvent ) )
+                            .withPayload( deleteEventHandledResult )
                             .setHeader( KafkaHeaders.TOPIC, "sagaAccessResult" )
                             .setHeader( KafkaHeaders.MESSAGE_KEY, record.key() )
                             .build();

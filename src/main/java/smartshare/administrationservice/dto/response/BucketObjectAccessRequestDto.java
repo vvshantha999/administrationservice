@@ -11,4 +11,5 @@ class BucketObjectAccessRequestDto {
     private String bucketObjectName;
     private String requestType;
     private String status;
+    private int id;
 }

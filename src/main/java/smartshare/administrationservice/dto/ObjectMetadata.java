@@ -1,32 +1,13 @@
 package smartshare.administrationservice.dto;
 
 
-public class ObjectMetadata {
+import lombok.Data;
+
+public @Data
+class ObjectMetadata {
 
     private String ownerName;
+    private int ownerId;
     private AccessingUserInfoForApi accessingUserInfo;
 
-    public String getOwnerName() {
-        return ownerName;
-    }
-
-    public void setOwnerName(String ownerName) {
-        this.ownerName = ownerName;
-    }
-
-    public AccessingUserInfoForApi getAccessingUserInfo() {
-        return accessingUserInfo;
-    }
-
-    public void setAccessingUserInfo(AccessingUserInfoForApi accessingUserInfo) {
-        this.accessingUserInfo = accessingUserInfo;
-    }
-
-    @Override
-    public String toString() {
-        return "ObjectMetadata{" +
-                "ownerName='" + ownerName + '\'' +
-                ", accessingUsersInfo=" + accessingUserInfo +
-                '}';
-    }
 }

@@ -75,7 +75,7 @@ class APIRequestServiceTest {
         when( userAggregateRepository.findById( any() ) ).thenReturn( Optional.of( user ) );
 
         // execute the call
-        List<BucketObjectMetadata> result = apiRequestService.fetchBucketObjectsMetaDataByBucketNameAndUserName( "file.server.1", "sethu" );
+        List<BucketObjectMetadata> result = apiRequestService.fetchBucketObjectsMetaDataByBucketNameAndUserId( "file.server.1", 1 );
 
         // assert  the results
         assertAll(

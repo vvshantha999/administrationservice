@@ -52,19 +52,18 @@ public class ObjectAccessRequestMapper implements Mapper {
         ObjectAccessRequest objectAccessRequest = (ObjectAccessRequest) objectToBeTransformed;
         BucketObjectAccessRequestEntity bucketObjectAccessRequest = new BucketObjectAccessRequestEntity();
         UserAggregate user = Objects.requireNonNull( userAggregateRepository.findByUserName( objectAccessRequest.getUserName() ) );
-        UserAggregate owner = Objects.requireNonNull( userAggregateRepository.findByUserName( objectAccessRequest.getOwnerName() ) );
         BucketAggregate bucket = Objects.requireNonNull( bucketAggregateRepository.findByBucketName( objectAccessRequest.getBucketName() ) );
         ObjectAccessEntity accessEntity = Objects.requireNonNull( getObjectAccessEntityRecord( objectAccessRequest.getAccess() ) );
         BucketObjectAggregate bucketObject = null;
         for (BucketObjectAggregate bucketObjectAggregate : bucket.getBucketObjects()) {
-            if (bucketObjectAggregate.getBucketObjectName() == objectAccessRequest.getObjectName())
+            if (bucketObjectAggregate.getBucketObjectName().equals( objectAccessRequest.getObjectName() ))
                 bucketObject = bucketObjectAggregate;
         }
         if (null != bucketObject) {
             bucketObjectAccessRequest.setBucketObjectId( bucketObject.getBucketObjectId() );
             bucketObjectAccessRequest.setBucketId( bucket.getBucketId() );
             bucketObjectAccessRequest.setObjectAccessId( accessEntity.getObjectAccessId() );
-            bucketObjectAccessRequest.setOwnerId( owner.getUserId() );
+            bucketObjectAccessRequest.setOwnerId( objectAccessRequest.getOwnerId() );
             bucketObjectAccessRequest.setUserId( user.getUserId() );
         } else
             log.error( "Bucket Object Not found " + objectAccessRequest );

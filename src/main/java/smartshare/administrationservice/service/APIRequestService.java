@@ -51,33 +51,35 @@ public class APIRequestService {
 
     private BucketObjectMetadata mapToReadModel(BucketObjectAggregate bucketObject, UserAggregate user) {
         log.info( "Inside mapToReadModel" );
-        BucketObjectMetadata bucketObjectMetadata = null;
+        ObjectMetadata objectMetadata = new ObjectMetadata();
         Optional<UserAggregate> owner = userAggregateRepository.findById( bucketObject.getOwnerId() );
         Optional<BucketObjectAccessingUser> accessingUser = bucketObject.getAccessingUsers().stream()
                 .filter( bucketObjectAccessingUser -> bucketObjectAccessingUser.getUserId() == user.getUserId() )
                 .findFirst();
-        if (accessingUser.isPresent() && owner.isPresent()) {
-            ObjectMetadata objectMetadata = new ObjectMetadata();
+        if (owner.isPresent()) {
             objectMetadata.setOwnerName( owner.get().getUserName() );
+            objectMetadata.setOwnerId( owner.get().getUserId() );
+        }
+        if (accessingUser.isPresent()) {
             ObjectAccessEntity accessInfo = objectAccessEntityRepository.findById( accessingUser.get().getObjectAccessId() )
                     .orElseGet( () -> objectAccessEntityRepository.findByReadAndWriteAndDelete( false, false, false ) );
             objectMetadata.setAccessingUserInfo( new AccessingUserInfoForApi( user.getUserName(), accessInfo ) );
-            bucketObjectMetadata = new BucketObjectMetadata( bucketObject.getBucketObjectName(), objectMetadata );
         }
-        return bucketObjectMetadata;
+        return new BucketObjectMetadata( bucketObject.getBucketObjectName(), objectMetadata );
     }
 
 
-    public List<BucketObjectMetadata> fetchBucketObjectsMetaDataByBucketNameAndUserName(String bucketName, String userName) {
+    public List<BucketObjectMetadata> fetchBucketObjectsMetaDataByBucketNameAndUserId(String bucketName, int userId) {
         log.info( "Inside fetchBucketObjectsMetaDataByBucketAndUser" );
         try {
             BucketAggregate bucket = Objects.requireNonNull( bucketAggregateRepository.findByBucketName( bucketName ) );
-            UserAggregate user = Objects.requireNonNull( userAggregateRepository.findByUserName( userName ) );
-            return bucket.getBucketObjects().stream()
-                    .map( bucketObjectAggregate -> mapToReadModel( bucketObjectAggregate, user ) )
-                    .filter( Objects::nonNull )
-                    .sorted( Comparator.comparing( BucketObjectMetadata::getObjectName ) )
-                    .collect( Collectors.toList() );
+            Optional<UserAggregate> user = userAggregateRepository.findById( userId );
+            if (user.isPresent() && !bucket.getBucketObjects().isEmpty())
+                return bucket.getBucketObjects().stream()
+                        .map( bucketObjectAggregate -> mapToReadModel( bucketObjectAggregate, user.get() ) )
+                        .filter( Objects::nonNull )
+                        .sorted( Comparator.comparing( BucketObjectMetadata::getObjectName ) )
+                        .collect( Collectors.toList() );
         } catch (Exception e) {
             log.error( "Exception inside fetchBucketObjectsMetaDataByBucketAndUser service layer ", e );
         }

@@ -28,9 +28,9 @@ public class APIRequestController {
     }
 
     @GetMapping(value = "objects/accessInfo")
-    public BucketObjectsMetadata fetchMetaDataForObjectsInGivenBucketForSpecificUser(@RequestParam("bucketName") String bucketName, @RequestParam("userName") String userName) {
+    public BucketObjectsMetadata fetchMetaDataForObjectsInGivenBucketForSpecificUser(@RequestParam("bucketName") String bucketName, @RequestParam("userId") int userId) {
         log.info( "Inside fetchMetaDataForObjectsInS3" );
-        return new BucketObjectsMetadata( apiRequestService.fetchBucketObjectsMetaDataByBucketNameAndUserName( bucketName, userName ) );
+        return new BucketObjectsMetadata( apiRequestService.fetchBucketObjectsMetaDataByBucketNameAndUserId( bucketName, userId ) );
     }
 
     @GetMapping(value = "buckets/accessInfo")

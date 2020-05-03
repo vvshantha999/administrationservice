@@ -20,7 +20,7 @@ public class BucketAggregate {
     private Set<BucketObjectAggregate> bucketObjects = new HashSet<>();
 
 
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "bucket", orphanRemoval = true)
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "bucket", orphanRemoval = true, fetch = FetchType.EAGER)
     private Set<BucketAccessingUser> bucketAccessingUsers = new HashSet<>();
 
 
@@ -72,6 +72,8 @@ public class BucketAggregate {
     }
 
     public Boolean removeBucketObject(String bucketObjectName, int ownerId) {
+        System.out.println( "bucketObjectName---->" + bucketObjectName );
+        System.out.println( "ownerId---->" + ownerId );
         Optional<BucketObjectAggregate> bucketObject = this.bucketObjects.stream()
                 .filter( bucketObjectAggregate -> bucketObjectAggregate.getBucketObjectName().equals( bucketObjectName ) && bucketObjectAggregate.getOwnerId() == ownerId )
                 .findAny();
@@ -108,8 +110,12 @@ public class BucketAggregate {
     }
 
     public Boolean isUserExistsInBucket(int userId) {
-        return this.getBucketAccessingUsers().stream()
-                .anyMatch( bucketAccessingUser -> bucketAccessingUser.getUserId() == userId );
+        System.out.println( "isUserExistsInBucket" + this.bucketAccessingUsers.size() );
+        return this.bucketAccessingUsers.stream()
+                .anyMatch( bucketAccessingUser -> {
+                    System.out.println( bucketAccessingUser.getUserId() );
+                    return bucketAccessingUser.getUserId() == userId;
+                } );
 
     }
 

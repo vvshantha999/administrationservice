@@ -28,9 +28,12 @@ class ObjectAccessEntity {
         access.add( this.getDelete() );
         return access;
     }
-
     public String getAccessInfo() {
-        return String.format( "Read : %s | Write : %s | Delete : %s", this.getRead(), this.getWrite(), this.getDelete() );
+        StringBuilder accessBuilder = new StringBuilder();
+        if (Boolean.TRUE.equals( read )) accessBuilder.append( "Read" );
+        if (Boolean.TRUE.equals( write )) accessBuilder.append( "Write" );
+        if (Boolean.TRUE.equals( delete )) accessBuilder.append( "Delete" );
+        return accessBuilder.toString().trim();
     }
 
 

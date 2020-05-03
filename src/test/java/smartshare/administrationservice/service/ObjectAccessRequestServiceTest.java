@@ -8,6 +8,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import smartshare.administrationservice.dto.ObjectAccessRequest;
+import smartshare.administrationservice.dto.response.BucketObjectAccessRequestDto;
 import smartshare.administrationservice.models.*;
 import smartshare.administrationservice.repository.BucketAggregateRepository;
 import smartshare.administrationservice.repository.BucketObjectAccessRequestEntityRepository;
@@ -34,6 +35,8 @@ class ObjectAccessRequestServiceTest {
     private BucketObjectAggregateRepository bucketObjectRepository;
 
     @MockBean
+    private BucketObjectAccessRequestEntityRepository bucketObjectAccessRequestEntityRepository;
+    @MockBean
     private UserAggregateRepository userRepository;
 
     @Autowired
@@ -50,7 +53,7 @@ class ObjectAccessRequestServiceTest {
         objectAccessRequestFromUi.setAccess( "read" );
         objectAccessRequestFromUi.setBucketName( "file.server.1" );
         objectAccessRequestFromUi.setObjectName( "sample.txt" );
-        objectAccessRequestFromUi.setOwnerName( "sethu" );
+        objectAccessRequestFromUi.setOwnerId( 1 );
         objectAccessRequestFromUi.setUserName( "ramu" );
 
         UserAggregate owner = new UserAggregate();
@@ -107,6 +110,8 @@ class ObjectAccessRequestServiceTest {
     void deleteBucketObjectAccessRequest() {
         //setup mock ( if needed verify the mock)
 
+        BucketObjectAccessRequestDto bucketObjectAccessRequestDto = new BucketObjectAccessRequestDto();
+
         BucketObjectAccessRequestEntity objectAccessRequest = new BucketObjectAccessRequestEntity();
         objectAccessRequest.setObjectAccessId( 8 );
         objectAccessRequest.setUserId( 2 );
@@ -114,8 +119,10 @@ class ObjectAccessRequestServiceTest {
         objectAccessRequest.setBucketId( 1 );
         objectAccessRequest.setBucketObjectId( 1 );
 
+        when( bucketObjectAccessRequestEntityRepository.findById( any() ) ).thenReturn( Optional.of( objectAccessRequest ) );
+
         // execute the call
-        Boolean result = objectAccessRequestService.deleteBucketObjectAccessRequest( objectAccessRequest );
+        Boolean result = objectAccessRequestService.deleteBucketObjectAccessRequests( Collections.singletonList( bucketObjectAccessRequestDto ) );
 
         // assert  the results
         assertEquals( result, true );
@@ -133,7 +140,7 @@ class ObjectAccessRequestServiceTest {
         objectAccessRequestFromUi.setAccess( "read" );
         objectAccessRequestFromUi.setBucketName( "file.server.1" );
         objectAccessRequestFromUi.setObjectName( "sample.txt" );
-        objectAccessRequestFromUi.setOwnerName( "sethu" );
+        objectAccessRequestFromUi.setOwnerId( 1 );
         objectAccessRequestFromUi.setUserName( "ramu" );
 
         UserAggregate owner = new UserAggregate();
@@ -157,12 +164,15 @@ class ObjectAccessRequestServiceTest {
         bucketObjectAggregate.setOwnerId( 1 );
         bucketObjectAggregate.addAccessingUser( 2, 5 );
 
+        BucketObjectAccessRequestDto bucketObjectAccessRequestDto = new BucketObjectAccessRequestDto();
+
         BucketObjectAccessRequestEntity objectAccessRequest = new BucketObjectAccessRequestEntity();
         objectAccessRequest.setObjectAccessId( 2 );
         objectAccessRequest.setUserId( 2 );
         objectAccessRequest.setOwnerId( 1 );
         objectAccessRequest.setBucketId( 1 );
         objectAccessRequest.setBucketObjectId( 1 );
+        when( bucketObjectAccessRequestEntityRepository.findById( any() ) ).thenReturn( Optional.of( objectAccessRequest ) );
 
 
         when( objectAccessRequestRepository.save( any() ) ).thenReturn( objectAccessRequest );
@@ -174,7 +184,7 @@ class ObjectAccessRequestServiceTest {
 
 
         // execute the call
-        Boolean result = objectAccessRequestService.approveBucketObjectAccessRequest( objectAccessRequest );
+        Boolean result = objectAccessRequestService.approveBucketObjectAccessRequests( Collections.singletonList( bucketObjectAccessRequestDto ) );
 
         // assert  the results
         assertEquals( result, true );
@@ -196,7 +206,7 @@ class ObjectAccessRequestServiceTest {
         objectAccessRequestFromUi.setAccess( "read" );
         objectAccessRequestFromUi.setBucketName( "file.server.1" );
         objectAccessRequestFromUi.setObjectName( "sample.txt" );
-        objectAccessRequestFromUi.setOwnerName( "sethu" );
+        objectAccessRequestFromUi.setOwnerId( 1 );
         objectAccessRequestFromUi.setUserName( "ramu" );
 
         UserAggregate owner = new UserAggregate();
@@ -227,12 +237,16 @@ class ObjectAccessRequestServiceTest {
         objectAccessEntity.setObjectAccessId( 1 );
 
 
+        BucketObjectAccessRequestDto bucketObjectAccessRequestDto = new BucketObjectAccessRequestDto();
+
         BucketObjectAccessRequestEntity objectAccessRequest = new BucketObjectAccessRequestEntity();
-        objectAccessRequest.setObjectAccessId( 1 );
+        objectAccessRequest.setObjectAccessId( 2 );
         objectAccessRequest.setUserId( 2 );
         objectAccessRequest.setOwnerId( 1 );
         objectAccessRequest.setBucketId( 1 );
         objectAccessRequest.setBucketObjectId( 1 );
+        when( bucketObjectAccessRequestEntityRepository.findById( any() ) ).thenReturn( Optional.of( objectAccessRequest ) );
+
 
         when( objectAccessRequestRepository.save( any() ) ).thenReturn( objectAccessRequest );
         when( bucketObjectRepository.save( any() ) ).thenReturn( bucketObjectAggregate );
@@ -240,7 +254,7 @@ class ObjectAccessRequestServiceTest {
         when( bucketObjectRepository.findByBucketObjectIdAndBucket_BucketId( anyInt(), anyInt() ) ).thenReturn( bucketObjectAggregate );
 
         // execute the call
-        Boolean result = objectAccessRequestService.approveBucketObjectAccessRequest( objectAccessRequest );
+        Boolean result = objectAccessRequestService.approveBucketObjectAccessRequests( Collections.singletonList( bucketObjectAccessRequestDto ) );
 
         // assert  the results
         assertEquals( result, true );
@@ -256,17 +270,20 @@ class ObjectAccessRequestServiceTest {
     void rejectObjectAccessRequest() {
         //setup mock ( if needed verify the mock)
 
+        BucketObjectAccessRequestDto bucketObjectAccessRequestDto = new BucketObjectAccessRequestDto();
+
         BucketObjectAccessRequestEntity objectAccessRequest = new BucketObjectAccessRequestEntity();
-        objectAccessRequest.setObjectAccessId( 1 );
+        objectAccessRequest.setObjectAccessId( 2 );
         objectAccessRequest.setUserId( 2 );
         objectAccessRequest.setOwnerId( 1 );
         objectAccessRequest.setBucketId( 1 );
         objectAccessRequest.setBucketObjectId( 1 );
+        when( bucketObjectAccessRequestEntityRepository.findById( any() ) ).thenReturn( Optional.of( objectAccessRequest ) );
 
         when( objectAccessRequestRepository.save( any() ) ).thenReturn( objectAccessRequest );
 
         // execute the call
-        Boolean result = objectAccessRequestService.rejectObjectAccessRequest( objectAccessRequest );
+        Boolean result = objectAccessRequestService.rejectBucketObjectAccessRequests( Collections.singletonList( bucketObjectAccessRequestDto ) );
 
         // assert  the results
         assertEquals( result, true );

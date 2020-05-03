@@ -71,13 +71,28 @@ public class BucketObjectAccessRequestService {
     }
 
 
-    public Boolean deleteBucketObjectAccessRequest(BucketObjectAccessRequestEntity objectAccessRequest) {
+    private Boolean deleteBucketObjectAccessRequest(BucketObjectAccessRequestDto bucketObjectAccessRequest) {
         log.info( "Inside deleteBucketObjectAccessRequest" );
         try {
-            bucketObjectAccessRequestEntityRepository.delete( objectAccessRequest );
-            return Boolean.TRUE;
+            Optional<BucketObjectAccessRequestEntity> bucketObjectAccessRequestEntityExists = bucketObjectAccessRequestEntityRepository.findById( bucketObjectAccessRequest.getId() );
+            if (bucketObjectAccessRequestEntityExists.isPresent()) {
+                bucketObjectAccessRequestEntityRepository.delete( bucketObjectAccessRequestEntityExists.get() );
+                return Boolean.TRUE;
+            }
         } catch (Exception e) {
-            log.error( "Error in deleting the object access requests " + e.getMessage() );
+            log.error( "Error in deleting the object access request :" + bucketObjectAccessRequest.getBucketObjectName() + " Error:" + e.getMessage() );
+        }
+        return Boolean.FALSE;
+    }
+
+    public boolean deleteBucketObjectAccessRequests(List<BucketObjectAccessRequestDto> bucketObjectAccessRequests) {
+        log.info( "Inside rejectBucketObjectAccessRequests" );
+        try {
+            return bucketObjectAccessRequests.stream()
+                    .map( this::deleteBucketObjectAccessRequest )
+                    .noneMatch( saveResult -> saveResult.equals( Boolean.FALSE ) );
+        } catch (Exception e) {
+            log.error( "Error in deleting the object access requests " + e );
         }
         return Boolean.FALSE;
     }
@@ -115,23 +130,36 @@ public class BucketObjectAccessRequestService {
         return bucketObject.addAccessingUser( objectAccessRequest.getUserId(), objectAccessRequest.getObjectAccessId() );
     }
 
-
     @Transactional
-    public Boolean approveBucketObjectAccessRequest(BucketObjectAccessRequestEntity objectAccessRequest) {
+    Boolean approveBucketObjectAccessRequest(BucketObjectAccessRequestDto bucketObjectAccessRequest) {
         log.info( "Inside approveBucketObjectAccessRequest" );
         try {
-            Optional<BucketAggregate> bucket = bucketAggregateRepository.findById( objectAccessRequest.getBucketId() );
-            if (bucket.isPresent()) {
-                BucketObjectAggregate bucketObject = Objects.requireNonNull( bucketObjectAggregateRepository.findByBucketObjectIdAndBucket_BucketId( objectAccessRequest.getBucketObjectId(), bucket.get().getBucketId() ) );
-                // BucketObjectAggregate bucketObject = Objects.requireNonNull(bucket.get().findBucketObjectByBucketObjectId( objectAccessRequest.getBucketObjectId() ));
-                if (Boolean.TRUE.equals( bucketObject.isUserExistsInBucketObject( objectAccessRequest.getUserId() ) ))
-                    bucketObject = updateBucketObjectAccessEntries( bucketObject, objectAccessRequest );
-                else
-                    bucketObject = insertBucketObjectAccessEntries( bucketObject, objectAccessRequest );
+            Optional<BucketObjectAccessRequestEntity> bucketObjectAccessRequestEntityExists = bucketObjectAccessRequestEntityRepository.findById( bucketObjectAccessRequest.getId() );
+            if (bucketObjectAccessRequestEntityExists.isPresent()) {
+                Optional<BucketObjectAggregate> bucketObjectExists = bucketObjectAggregateRepository.findById( bucketObjectAccessRequestEntityExists.get().getBucketObjectId() );
+                BucketObjectAggregate bucketObject = null;
+                if (bucketObjectExists.isPresent() && Boolean.TRUE.equals( bucketObjectExists.get().isUserExistsInBucketObject( bucketObjectAccessRequestEntityExists.get().getUserId() ) )) {
+                    bucketObject = updateBucketObjectAccessEntries( bucketObjectExists.get(), bucketObjectAccessRequestEntityExists.get() );
+                } else if (bucketObjectExists.isPresent()) {
+                    bucketObject = insertBucketObjectAccessEntries( bucketObjectExists.get(), bucketObjectAccessRequestEntityExists.get() );
+                }
                 bucketObjectAggregateRepository.save( Objects.requireNonNull( bucketObject ) );
-                bucketObjectAccessRequestEntityRepository.save( objectAccessRequest.approve() );
+                bucketObjectAccessRequestEntityRepository.save( bucketObjectAccessRequestEntityExists.get().approve() );
                 return Boolean.TRUE;
             }
+        } catch (Exception e) {
+            log.error( "Error in approving the object access requests :" + bucketObjectAccessRequest.getBucketObjectName() + " Error:" + e.getMessage() );
+        }
+        return Boolean.FALSE;
+    }
+
+
+    public boolean approveBucketObjectAccessRequests(List<BucketObjectAccessRequestDto> bucketObjectAccessRequests) {
+        log.info( "Inside approveBucketObjectAccessRequests" );
+        try {
+            return bucketObjectAccessRequests.stream()
+                    .map( this::approveBucketObjectAccessRequest )
+                    .noneMatch( saveResult -> saveResult.equals( Boolean.FALSE ) );
         } catch (Exception e) {
             log.error( "Error in approving the object access requests " + e );
         }
@@ -139,14 +167,29 @@ public class BucketObjectAccessRequestService {
     }
 
 
-    public Boolean rejectObjectAccessRequest(BucketObjectAccessRequestEntity objectAccessRequest) {
-        log.info( "Inside approveObjectAccessRequest" );
+    private Boolean rejectObjectAccessRequest(BucketObjectAccessRequestDto bucketObjectAccessRequest) {
+        log.info( "Inside rejectObjectAccessRequest" );
         try {
-            BucketObjectAccessRequestEntity rejectedObjectAccessRequest = objectAccessRequest.reject();
-            bucketObjectAccessRequestEntityRepository.save( rejectedObjectAccessRequest );
-            return Boolean.TRUE;
+            Optional<BucketObjectAccessRequestEntity> bucketObjectAccessRequestEntityExists = bucketObjectAccessRequestEntityRepository.findById( bucketObjectAccessRequest.getId() );
+            if (bucketObjectAccessRequestEntityExists.isPresent()) {
+                BucketObjectAccessRequestEntity rejectedObjectAccessRequest = bucketObjectAccessRequestEntityExists.get().reject();
+                bucketObjectAccessRequestEntityRepository.save( rejectedObjectAccessRequest );
+                return Boolean.TRUE;
+            }
         } catch (Exception e) {
-            log.error( "Error in rejecting the object access requests " + e.getMessage() );
+            log.error( "Error in rejecting the object access requests :" + bucketObjectAccessRequest.getBucketObjectName() + " Error:" + e.getMessage() );
+        }
+        return Boolean.FALSE;
+    }
+
+    public boolean rejectBucketObjectAccessRequests(List<BucketObjectAccessRequestDto> bucketObjectAccessRequests) {
+        log.info( "Inside rejectBucketObjectAccessRequests" );
+        try {
+            return bucketObjectAccessRequests.stream()
+                    .map( this::rejectObjectAccessRequest )
+                    .noneMatch( saveResult -> saveResult.equals( Boolean.FALSE ) );
+        } catch (Exception e) {
+            log.error( "Error in rejecting the object access requests " + e );
         }
         return Boolean.FALSE;
     }
@@ -154,6 +197,7 @@ public class BucketObjectAccessRequestService {
 
     private BucketObjectAccessRequestDto bucketObjectAccessRequestDtoMapper(BucketObjectAccessRequestEntity bucketObjectAccessRequestEntity) {
         BucketObjectAccessRequestDto bucketObjectAccessRequestDto = new BucketObjectAccessRequestDto();
+        bucketObjectAccessRequestDto.setId( bucketObjectAccessRequestEntity.getId() );
         userAggregateRepository.findById( bucketObjectAccessRequestEntity.getUserId() )
                 .ifPresent( userAggregate -> bucketObjectAccessRequestDto.setUserName( userAggregate.getUserName() ) );
         userAggregateRepository.findById( bucketObjectAccessRequestEntity.getOwnerId() )
@@ -168,21 +212,18 @@ public class BucketObjectAccessRequestService {
         return bucketObjectAccessRequestDto;
     }
 
-    public List<BucketObjectAccessRequestDto> getAccessRequestsToBeApprovedByOwnerOfObject(String ownerName) {
+    public List<BucketObjectAccessRequestDto> getAccessRequestsToBeApprovedByOwner(int ownerId) {
         log.info( "Inside getAccessRequestsToBeApprovedByOwnerOfObject" );
         // owner will be same
-        UserAggregate owner = userAggregateRepository.findByUserName( ownerName );
-        return bucketObjectAccessRequestEntityRepository.findAllByOwnerId( owner.getUserId() ).stream()
+        return bucketObjectAccessRequestEntityRepository.findAllByOwnerId( ownerId ).stream()
                 .map( this::bucketObjectAccessRequestDtoMapper )
                 .collect( Collectors.toList() );
-
     }
 
-    public List<BucketObjectAccessRequestDto> getAccessRequestsCreatedByUser(String userName) {
+    public List<BucketObjectAccessRequestDto> getAccessRequestsCreatedByUser(int userId) {
         log.info( "Inside getAccessRequestsCreatedByUser" );
         // user will be same
-        UserAggregate user = userAggregateRepository.findByUserName( userName );
-        return bucketObjectAccessRequestEntityRepository.findAllByUserId( user.getUserId() ).stream()
+        return bucketObjectAccessRequestEntityRepository.findAllByUserId( userId ).stream()
                 .map( this::bucketObjectAccessRequestDtoMapper )
                 .collect( Collectors.toList() );
     }
@@ -247,16 +288,18 @@ public class BucketObjectAccessRequestService {
         return root;
     }
 
-    public FolderComponent getListOfUsersAccessingOwnerObjects(String bucketName, String ownerName) {
+    public FolderComponent getListOfUsersAccessingOwnerObjects(String bucketName, int ownerId) {
         log.info( "Inside getListOfUsersAccessingOwnerObject" );
-        BucketAggregate bucket = bucketAggregateRepository.findByBucketName( bucketName );
-        UserAggregate owner = userAggregateRepository.findByUserName( ownerName );
-        final List<BucketObjectAggregate> bucketObjectAggregateStream = bucket.getBucketObjects().stream()
-                .filter( bucketObjectAggregate -> bucketObjectAggregate.getOwnerId() == owner.getUserId() )
-                .sorted( Comparator.comparing( BucketObjectAggregate::getBucketObjectName ) )
-                .collect( Collectors.toList() );
-
-        return this.ownerFileStructureConverter( bucketObjectAggregateStream, bucketName, ownerName );
+        Optional<UserAggregate> owner = userAggregateRepository.findById( ownerId );
+        if (owner.isPresent()) {
+            BucketAggregate bucket = bucketAggregateRepository.findByBucketName( bucketName );
+            final List<BucketObjectAggregate> bucketObjectAggregateStream = bucket.getBucketObjects().stream()
+                    .filter( bucketObjectAggregate -> bucketObjectAggregate.getOwnerId() == owner.get().getUserId() )
+                    .sorted( Comparator.comparing( BucketObjectAggregate::getBucketObjectName ) )
+                    .collect( Collectors.toList() );
+            return this.ownerFileStructureConverter( bucketObjectAggregateStream, bucketName, owner.get().getUserName() );
+        }
+        return null;
     }
 
 
@@ -317,13 +360,18 @@ public class BucketObjectAccessRequestService {
     }
 
 
-    public UserFolderComponent getUserFilesByBucket(String bucketName, String userName) {
+    public UserFolderComponent getUserFilesByBucket(String bucketName, int userId) {
         log.info( "Inside getUserFilesByBucket" );
         BucketAggregate bucket = bucketAggregateRepository.findByBucketName( bucketName );
-        UserAggregate user = userAggregateRepository.findByUserName( userName );
-        final List<BucketObjectAggregate> bucketObjectAggregate = bucket.getBucketObjects().stream()
-                .sorted( Comparator.comparing( BucketObjectAggregate::getBucketObjectName ) )
-                .collect( Collectors.toList() );
-        return userFileStructureConverter( bucketObjectAggregate, bucketName, user );
+        Optional<UserAggregate> userExist = userAggregateRepository.findById( userId );
+        if (userExist.isPresent()) {
+            final List<BucketObjectAggregate> bucketObjectAggregate = bucket.getBucketObjects().stream()
+                    .sorted( Comparator.comparing( BucketObjectAggregate::getBucketObjectName ) )
+                    .collect( Collectors.toList() );
+            return userFileStructureConverter( bucketObjectAggregate, bucketName, userExist.get() );
+        }
+        return null;
     }
+
+
 }

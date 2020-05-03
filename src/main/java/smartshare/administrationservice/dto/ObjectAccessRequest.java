@@ -12,7 +12,7 @@ class ObjectAccessRequest {
     private String userName;
     private String bucketName;
     private String objectName;
-    private String ownerName;
+    private int ownerId;
     private String access;
 
 }

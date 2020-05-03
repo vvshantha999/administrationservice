@@ -13,6 +13,7 @@ import smartshare.administrationservice.repository.UserAggregateRepository;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -37,16 +38,16 @@ public class BucketObjectAdministrationService {
 
 
     private BucketObjectEvent deleteBucketObject(BucketObjectEvent bucketObjectFromApi) {
+        log.info( "Inside deleteBucketObject" );
         try {
             BucketAggregate bucket = Objects.requireNonNull( bucketAggregateRepository.findByBucketName( bucketObjectFromApi.getBucketName() ) );
-            UserAggregate owner = Objects.requireNonNull( userAggregateRepository.findByUserName( bucketObjectFromApi.getOwnerName() ) );
-            final Boolean bucketObjectRemoved = bucket.removeBucketObject( bucketObjectFromApi.getObjectName(), owner.getUserId() );
+            final Boolean bucketObjectRemoved = bucket.removeBucketObject( bucketObjectFromApi.getObjectName(), bucketObjectFromApi.getOwnerId() );
             if (Boolean.TRUE.equals( bucketObjectRemoved )) {
                 bucketAggregateRepository.save( bucket );
                 log.info( bucketObjectFromApi.getObjectName() + " access details deleted successfully" );
                 bucketObjectFromApi.setStatus( StatusConstants.SUCCESS.toString() );
-            }
-            log.info( bucketObjectFromApi.getObjectName() + " access details deletion  failed as the bucket object was not found" );
+            } else
+                log.info( bucketObjectFromApi.getObjectName() + " access details deletion  failed as the bucket object was not found" );
         } catch (Exception e) {
             log.error( "Exception while deleting the object " + bucketObjectFromApi + " " + e );
         }
@@ -55,7 +56,7 @@ public class BucketObjectAdministrationService {
     }
 
     public List<BucketObjectEvent> deleteBucketObjects(List<BucketObjectEvent> objectsToBeDeleted) {
-        log.info( "Inside deleteGivenObjectsInDb" );
+        log.info( "Inside deleteBucketObjects" );
 
         return objectsToBeDeleted.stream()
                 .map( this::deleteBucketObject )
@@ -66,15 +67,16 @@ public class BucketObjectAdministrationService {
     public BucketObjectEvent createAccessDetailForBucketObject(BucketObjectEvent bucketObjectFromApi) {
         log.info( "Inside createAccessDetailForBucketObject" );
         try {
-            //  BucketAggregate bucket = Objects.requireNonNull( bucketAggregateRepository.findByBucketName( bucketObjectFromApi.getBucketName() ) );
-            BucketAggregate bucket = new BucketAggregate();
-            bucket.setBucketName( "bucket975351" );
-            bucket.setAdminId( 1 );
-            bucket.setBucketId( 1 );
-            UserAggregate owner = Objects.requireNonNull( userAggregateRepository.findByUserName( bucketObjectFromApi.getOwnerName() ) );
-            //    if (bucket.isUserExistsInBucket( owner.getUserId() )) {
-            if (true) {
-                bucket.addBucketObject( bucketObjectFromApi.getObjectName(), owner.getUserId() );
+            System.out.println( "bucketObjectFromApi-->" + bucketObjectFromApi.toString() );
+            BucketAggregate bucket = Objects.requireNonNull( bucketAggregateRepository.findByBucketName( bucketObjectFromApi.getBucketName() ) );
+            Optional<UserAggregate> owner = userAggregateRepository.findById( bucketObjectFromApi.getOwnerId() );
+            System.out.println( "owner--->" + owner.isPresent() );
+            System.out.println( "bucket--->" + bucket.getBucketName() );
+            System.out.println( "bucket--->" + bucket.getBucketAccessingUsers().size() );
+            System.out.println( "bucket.isUserExistsInBucket( owner.get().getUserId() ) ---" + bucket.isUserExistsInBucket( owner.get().getUserId() ) );
+
+            if (owner.isPresent() && Boolean.TRUE.equals( bucket.isUserExistsInBucket( owner.get().getUserId() ) )) {
+                bucket.addBucketObject( bucketObjectFromApi.getObjectName(), owner.get().getUserId() );
                 bucketAggregateRepository.save( bucket );
                 log.info( bucketObjectFromApi.toString() + " access details created successfully" );
                 bucketObjectFromApi.setStatus( StatusConstants.SUCCESS.toString() );
