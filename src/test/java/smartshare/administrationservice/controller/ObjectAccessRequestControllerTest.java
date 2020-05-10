@@ -42,9 +42,9 @@ class ObjectAccessRequestControllerTest {
     void createObjectAccessRequest() throws Exception {
         // set up the mock service
 
-        ObjectAccessRequest objectAccessRequest1 = new ObjectAccessRequest( "sethuram", "file.server.1", "folder", 1, "read" );
-        ObjectAccessRequest objectAccessRequest2 = new ObjectAccessRequest( "sethuram", "file.server.1", "folder/sample1.txt", 1, "read" );
-        ObjectAccessRequest objectAccessRequest3 = new ObjectAccessRequest( "sethuram", "file.server.1", "folder/sample2.txt", 1, "read" );
+        ObjectAccessRequest objectAccessRequest1 = new ObjectAccessRequest( "sethuram", 1, "file.server.1", "folder", 1, "read" );
+        ObjectAccessRequest objectAccessRequest2 = new ObjectAccessRequest( "sethuram", 1, "file.server.1", "folder/sample1.txt", 1, "read" );
+        ObjectAccessRequest objectAccessRequest3 = new ObjectAccessRequest( "sethuram", 1, "file.server.1", "folder/sample2.txt", 1, "read" );
         List<ObjectAccessRequest> objectAccessRequests = new ArrayList<>();
         objectAccessRequests.add( objectAccessRequest1 );
         objectAccessRequests.add( objectAccessRequest2 );

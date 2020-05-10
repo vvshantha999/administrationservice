@@ -40,7 +40,7 @@ public class BucketAdministrationService {
         BucketAggregate newBucket = new BucketAggregate();
         newBucket.setBucketName( bucketName );
         Optional<AdminRoleAggregate> adminRoleExists = adminRoleAggregateRepository.findById( UUID.fromString( "5fc03087-d265-11e7-b8c6-83e29cd24f4c" ).toString() );
-        System.out.println( "adminRoleExists------>" + adminRoleExists );
+
         if (adminRoleExists.isPresent()) newBucket.setAdminId( adminRoleExists.get().getAdminId() );
         else throw new IllegalArgumentException( "Admin Role is not Assigned" );
         return bucketAggregateRepository.save( newBucket );
@@ -50,10 +50,9 @@ public class BucketAdministrationService {
         log.info( "Inside deleteBucket" );
 
         BucketAggregate bucketToBeDeleted = bucketAggregateRepository.findByBucketName( bucketName );
-        System.out.println( bucketToBeDeleted.getBucketObjects().size() );
-        bucketToBeDeleted.getBucketObjects().forEach( bucketObjectAggregate -> System.out.println( bucketObjectAggregate.getBucketObjectId() ) );
+
         if (bucketToBeDeleted.getBucketObjects().isEmpty()) {
-            System.out.println( "inside" );
+
             bucketAggregateRepository.delete( bucketToBeDeleted );
             status.setValue( Boolean.TRUE );
         } else {

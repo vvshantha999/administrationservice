@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import smartshare.administrationservice.dto.BucketAccessRequestFromUi;
 import smartshare.administrationservice.dto.Status;
+import smartshare.administrationservice.dto.UploadObject;
 import smartshare.administrationservice.dto.UserBucketMapping;
 import smartshare.administrationservice.dto.mappers.BucketAccessRequestMapper;
 import smartshare.administrationservice.dto.response.BucketAccessRequestDto;
@@ -32,6 +33,7 @@ public class BucketAccessRequestService {
     private final BucketAggregateRepository bucketAggregateRepository;
     private final UserAggregateRepository userAggregateRepository;
     private final BucketAccessRequestMapper bucketAccessRequestMapper;
+    private final CoreAPIService coreAPIService;
 
     private final Status status;
 
@@ -42,7 +44,7 @@ public class BucketAccessRequestService {
             BucketAccessEntityRepository bucketAccessEntityRepository,
             BucketAggregateRepository bucketAggregateRepository,
             UserAggregateRepository userAggregateRepository,
-            BucketAccessRequestMapper bucketAccessRequestMapper) {
+            BucketAccessRequestMapper bucketAccessRequestMapper, CoreAPIService coreAPIService) {
 
         this.bucketAccessRequestEntityRepository = bucketAccessRequestEntityRepository;
         this.status = status;
@@ -50,7 +52,7 @@ public class BucketAccessRequestService {
         this.bucketAggregateRepository = bucketAggregateRepository;
         this.userAggregateRepository = userAggregateRepository;
         this.bucketAccessRequestMapper = bucketAccessRequestMapper;
-
+        this.coreAPIService = coreAPIService;
     }
 
 
@@ -59,7 +61,7 @@ public class BucketAccessRequestService {
         log.info( "Inside createBucketAccessRequest" );
         try {
             BucketAccessRequestEntity newBucketAccessRequest = bucketAccessRequestMapper.map( bucketAccessRequestFromUi );
-            BucketAccessRequestEntity createdBucketAccessRequest = bucketAccessRequestEntityRepository.save( newBucketAccessRequest );
+            bucketAccessRequestEntityRepository.save( newBucketAccessRequest );
             return Boolean.TRUE;
         } catch (Exception e) {
             log.error( "Exception while creating bucket Access Request" + e );
@@ -105,6 +107,7 @@ public class BucketAccessRequestService {
         return Boolean.FALSE;
     }
 
+
     private Boolean approveWriteBucketAccessRequest(BucketAccessRequestEntity bucketAccessRequest) {
         log.info( "Inside approveWriteBucketAccessRequest" );
         try {
@@ -123,8 +126,23 @@ public class BucketAccessRequestService {
                         bucketAccessingUser.setBucketAccessId( readAndWriteAccess.getBucketAccessId() );
                     }
                 }
-                if (!isRecordExists)
+                if (!isRecordExists) {
+
+                    UploadObject emptyFolderRequest = new UploadObject();
+                    emptyFolderRequest.setObjectName( user.get().getUserName() + "/" );
+                    emptyFolderRequest.setContent( "" );
+                    emptyFolderRequest.setOwner( user.get().getUserName() );
+                    emptyFolderRequest.setOwnerId( user.get().getUserId() );
+                    emptyFolderRequest.setBucketName( bucket.get().getBucketName() );
+                    Boolean emptyFolderCreated = coreAPIService.createEmptyFolder( emptyFolderRequest );
                     bucketAggregate.addBucketAccessingUsers( bucketAccessRequest.getUserId(), readAndWriteAccess.getBucketAccessId() );
+                    if (emptyFolderCreated) {
+                        bucketAggregateRepository.save( bucketAggregate );
+                        return Boolean.TRUE;
+                    }
+                    return Boolean.FALSE;
+                }
+
                 // create bucketObject
                 bucketAggregate.addBucketObject( user.get().getUserName() + "/", user.get().getUserId() );
                 bucketAggregateRepository.save( bucketAggregate );
@@ -187,18 +205,18 @@ public class BucketAccessRequestService {
             if (user.isPresent()) {
                 BucketAccessEntity readAndWriteAccess = Objects.requireNonNull( bucketAccessEntityRepository.findByReadAndWrite( true, true ) );
                 bucket.addBucketAccessingUsers( user.get().getUserId(), readAndWriteAccess.getBucketAccessId() );
-                bucket.addBucketObject( user.get().getUserName() + "/", user.get().getUserId() );
-                bucket.getBucketAccessingUsers().forEach( bucketAccessingUser -> {
-                    System.out.println( "+ before " + bucketAccessingUser.getUserId() + " " + bucketAccessingUser.getBucketAccessId() );
-                } );
-                bucketAggregateRepository.save( bucket );
-                bucket.getBucketAccessingUsers().forEach( bucketAccessingUser -> {
-                    System.out.println( "+ after" + bucketAccessingUser.getUserId() + " " + bucketAccessingUser.getBucketAccessId() );
-                } );
-
-                return Boolean.TRUE;
+                UploadObject emptyFolderRequest = new UploadObject();
+                emptyFolderRequest.setObjectName( user.get().getUserName() + "/" );
+                emptyFolderRequest.setContent( "" );
+                emptyFolderRequest.setOwner( user.get().getUserName() );
+                emptyFolderRequest.setOwnerId( user.get().getUserId() );
+                emptyFolderRequest.setBucketName( bucket.getBucketName() );
+                Boolean emptyFolderCreated = coreAPIService.createEmptyFolder( emptyFolderRequest );
+                if (emptyFolderCreated) {
+                    bucketAggregateRepository.save( bucket );
+                    return Boolean.TRUE;
+                }
             }
-
         } catch (Exception e) {
             log.error( "Exception while adding user to the Bucket by admin" + e.getMessage() );
         }
@@ -221,16 +239,15 @@ public class BucketAccessRequestService {
             if (userExists.isPresent()) {
                 UserAggregate user = userExists.get();
                 Boolean userExistsInBucket = bucket.isUserExistsInBucket( user.getUserId() );
-                System.out.println( "userExistsInBucket--------->" + userExistsInBucket );
+
                 int bucketObjectsCount = bucket.getBucketObjects( user.getUserId() );
-                System.out.println( "bucketObjectsCount--------->" + bucketObjectsCount );
+
                 if (userExistsInBucket && bucketObjectsCount <= 1) {
-                    System.out.println( "inside" );
+
                     final Boolean removedAccessingUser = bucket.removeBucketAccessingUsers( user.getUserId() );
-                    System.out.println( "removedAccessingUser----->" + removedAccessingUser );
-                    final Boolean removeBucketObject = bucket.removeBucketObject( user.getUserName() + "/", user.getUserId() );
-                    System.out.println( "removeBucketObject----->" + removeBucketObject );
-                    if (removedAccessingUser && removeBucketObject) bucketAggregateRepository.save( bucket );
+
+                    Boolean emptyFolderDeleted = coreAPIService.deleteObject( user.getUserName() + "/", bucket.getBucketName(), user.getUserId() );
+                    if (removedAccessingUser && emptyFolderDeleted) bucketAggregateRepository.save( bucket );
                     status.setValue( Boolean.TRUE );
                 } else {
                     status.setValue( Boolean.FALSE );
@@ -241,7 +258,7 @@ public class BucketAccessRequestService {
             log.error( "Exception while removing user from the Bucket by admin" + e );
             status.setValue( Boolean.FALSE );
         }
-        System.out.println( "status ---->" + status );
+
         return status;
     }
 
@@ -268,6 +285,4 @@ public class BucketAccessRequestService {
     public List<BucketAccessRequestEntity> getBucketAccessRequestForUser(String userName) {
         return bucketAccessRequestEntityRepository.findAllByUserId( userAggregateRepository.findByUserName( userName ).getUserId() );
     }
-
-
 }

@@ -86,20 +86,4 @@ public class KafkaConfiguration {
         return factory;
     }
 
-
-//    @Bean
-//    public KafkaConsumer<String, BucketObjectEvent[]> kafkaBucketObjectConsumer() {
-//        return new KafkaConsumer<>( configurationProperties, new StringDeserializer(), new JsonDeserializer<>( BucketObjectEvent[].class ) );
-//    }
-
-
-//    @Bean
-//    public ConcurrentKafkaListenerContainerFactory<Integer, String> kafkaListenerContainerFactory() {
-//        ConcurrentKafkaListenerContainerFactory<Integer, String> factory =
-//                new ConcurrentKafkaListenerContainerFactory<>();
-//        factory.setConsumerFactory(cf());
-//        factory.setReplyTemplate();
-//        factory.setReplyHeadersConfigurer((k, v) -> k.equals("cat"));
-//        return factory;
-//    }
 }

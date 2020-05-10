@@ -11,6 +11,7 @@ import smartshare.administrationservice.repository.ObjectAccessEntityRepository;
 import smartshare.administrationservice.repository.UserAggregateRepository;
 
 import java.util.Objects;
+import java.util.Optional;
 
 @Slf4j
 @Component
@@ -51,7 +52,7 @@ public class ObjectAccessRequestMapper implements Mapper {
     public <T, U> T map(U objectToBeTransformed) {
         ObjectAccessRequest objectAccessRequest = (ObjectAccessRequest) objectToBeTransformed;
         BucketObjectAccessRequestEntity bucketObjectAccessRequest = new BucketObjectAccessRequestEntity();
-        UserAggregate user = Objects.requireNonNull( userAggregateRepository.findByUserName( objectAccessRequest.getUserName() ) );
+        Optional<UserAggregate> user = userAggregateRepository.findById( objectAccessRequest.getUserId() );
         BucketAggregate bucket = Objects.requireNonNull( bucketAggregateRepository.findByBucketName( objectAccessRequest.getBucketName() ) );
         ObjectAccessEntity accessEntity = Objects.requireNonNull( getObjectAccessEntityRecord( objectAccessRequest.getAccess() ) );
         BucketObjectAggregate bucketObject = null;
@@ -59,12 +60,12 @@ public class ObjectAccessRequestMapper implements Mapper {
             if (bucketObjectAggregate.getBucketObjectName().equals( objectAccessRequest.getObjectName() ))
                 bucketObject = bucketObjectAggregate;
         }
-        if (null != bucketObject) {
+        if (null != bucketObject && user.isPresent()) {
             bucketObjectAccessRequest.setBucketObjectId( bucketObject.getBucketObjectId() );
             bucketObjectAccessRequest.setBucketId( bucket.getBucketId() );
             bucketObjectAccessRequest.setObjectAccessId( accessEntity.getObjectAccessId() );
             bucketObjectAccessRequest.setOwnerId( objectAccessRequest.getOwnerId() );
-            bucketObjectAccessRequest.setUserId( user.getUserId() );
+            bucketObjectAccessRequest.setUserId( user.get().getUserId() );
         } else
             log.error( "Bucket Object Not found " + objectAccessRequest );
         return (T) bucketObjectAccessRequest;

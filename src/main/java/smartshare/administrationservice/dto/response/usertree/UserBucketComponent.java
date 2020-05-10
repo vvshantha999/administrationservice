@@ -7,5 +7,6 @@ public abstract @Data
 class UserBucketComponent {
 
     protected String name;
+    protected String completeName;
 
 }

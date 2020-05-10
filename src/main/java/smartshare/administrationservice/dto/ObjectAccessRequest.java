@@ -10,6 +10,7 @@ public @Data
 class ObjectAccessRequest {
 
     private String userName;
+    private int userId;
     private String bucketName;
     private String objectName;
     private int ownerId;

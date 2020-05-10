@@ -72,8 +72,8 @@ public class BucketAggregate {
     }
 
     public Boolean removeBucketObject(String bucketObjectName, int ownerId) {
-        System.out.println( "bucketObjectName---->" + bucketObjectName );
-        System.out.println( "ownerId---->" + ownerId );
+
+
         Optional<BucketObjectAggregate> bucketObject = this.bucketObjects.stream()
                 .filter( bucketObjectAggregate -> bucketObjectAggregate.getBucketObjectName().equals( bucketObjectName ) && bucketObjectAggregate.getOwnerId() == ownerId )
                 .findAny();
@@ -110,10 +110,10 @@ public class BucketAggregate {
     }
 
     public Boolean isUserExistsInBucket(int userId) {
-        System.out.println( "isUserExistsInBucket" + this.bucketAccessingUsers.size() );
+
         return this.bucketAccessingUsers.stream()
                 .anyMatch( bucketAccessingUser -> {
-                    System.out.println( bucketAccessingUser.getUserId() );
+
                     return bucketAccessingUser.getUserId() == userId;
                 } );
 

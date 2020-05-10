@@ -36,7 +36,7 @@ public class SagaEventHandlerService {
         sagaEventResult.setObjects( bucketObjectEventResults );
         sagaEventResult.setStatus( bucketObjectEventResults.stream()
                 .anyMatch( bucketObjectForEvent -> bucketObjectForEvent.getStatus().equals( "failed" ) ) ? StatusConstants.FAILED.toString() : StatusConstants.SUCCESS.toString() );
-        System.out.println( " Result--->" + sagaEventResult );
+
         return sagaEventResult;
     }
 
@@ -54,7 +54,7 @@ public class SagaEventHandlerService {
 //    @KafkaListener(groupId = "sagaEventResultConsumer",topics = "sagaAccessResult")
 //    public void result(SagaEvent results) {
 //        log.info( "Inside sagaEventResultConsumer" );
-//        System.out.println( results);
+//
 //    }
 
 
@@ -62,15 +62,14 @@ public class SagaEventHandlerService {
     @SendTo("sagaAccessResult")
     public Message<SagaEvent> consume(SagaEvent sagaEvent, ConsumerRecord record) {
 
-        System.out.println( "----------->" + record );
-        System.out.println( "----------->" + sagaEvent );
+
         try {
 
             switch (record.key().toString()) {
                 case "create":
                     log.info( "Consumed create saga Events" );
                     final SagaEvent eventHandledResult = this.createEventHandler( sagaEvent );
-                    System.out.println( "---eventHandledResult-------->" + eventHandledResult );
+
                     return MessageBuilder
                             .withPayload( eventHandledResult )
                             .setHeader( KafkaHeaders.TOPIC, "sagaAccessResult" )

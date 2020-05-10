@@ -10,4 +10,5 @@ class UserLoginStatus {
 
     private UserAggregate registeredUser;
     private Boolean isAdmin;
+    private Boolean defaultAdmin;
 }

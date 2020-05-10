@@ -6,6 +6,7 @@ import lombok.Data;
 public abstract @Data
 class BucketComponent {
     protected String name;
+    protected String completeName;
     protected String owner;
 
 }

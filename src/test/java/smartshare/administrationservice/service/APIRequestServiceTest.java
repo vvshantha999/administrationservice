@@ -102,7 +102,7 @@ class APIRequestServiceTest {
         when( userAggregateRepository.findByUserName( any() ) ).thenReturn( user );
 
         // execute the call
-        List<BucketMetadata> result = apiRequestService.fetchBucketsMetaDataByUserName( "sethuram", "sethuram500@gmail.com" );
+        List<BucketMetadata> result = apiRequestService.fetchBucketsMetaDataByUserId( 1 );
         assertEquals( result, Collections.EMPTY_LIST );
         verify( bucketRepository ).findAll();
     }
@@ -148,7 +148,7 @@ class APIRequestServiceTest {
         when( userAggregateRepository.findByUserName( any() ) ).thenReturn( user );
 
         // execute the call
-        List<BucketMetadata> result = apiRequestService.fetchBucketsMetaDataByUserName( "sethu", "sethuram500@gmail.com" );
+        List<BucketMetadata> result = apiRequestService.fetchBucketsMetaDataByUserId( 1 );
 
         // assert  the results
         assertAll(

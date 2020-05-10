@@ -12,6 +12,8 @@ import smartshare.administrationservice.models.*;
 import smartshare.administrationservice.repository.*;
 
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 
@@ -27,6 +29,8 @@ public class APIRequestService {
     private final AdminRoleAggregateRepository adminRoleAggregateRepository;
     private final AdminAggregateRepository adminAggregateRepository;
     private final BucketAccessRequestEntityRepository bucketAccessRequestEntityRepository;
+    public static final Pattern VALID_EMAIL_ADDRESS_REGEX =
+            Pattern.compile( "^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,6}$", Pattern.CASE_INSENSITIVE );
 
 
     @Autowired
@@ -68,22 +72,9 @@ public class APIRequestService {
         return new BucketObjectMetadata( bucketObject.getBucketObjectName(), objectMetadata );
     }
 
-
-    public List<BucketObjectMetadata> fetchBucketObjectsMetaDataByBucketNameAndUserId(String bucketName, int userId) {
-        log.info( "Inside fetchBucketObjectsMetaDataByBucketAndUser" );
-        try {
-            BucketAggregate bucket = Objects.requireNonNull( bucketAggregateRepository.findByBucketName( bucketName ) );
-            Optional<UserAggregate> user = userAggregateRepository.findById( userId );
-            if (user.isPresent() && !bucket.getBucketObjects().isEmpty())
-                return bucket.getBucketObjects().stream()
-                        .map( bucketObjectAggregate -> mapToReadModel( bucketObjectAggregate, user.get() ) )
-                        .filter( Objects::nonNull )
-                        .sorted( Comparator.comparing( BucketObjectMetadata::getObjectName ) )
-                        .collect( Collectors.toList() );
-        } catch (Exception e) {
-            log.error( "Exception inside fetchBucketObjectsMetaDataByBucketAndUser service layer ", e );
-        }
-        return Collections.emptyList();
+    public static boolean validateUserNameAsEmail(String emailStr) {
+        Matcher matcher = VALID_EMAIL_ADDRESS_REGEX.matcher( emailStr );
+        return matcher.find();
     }
 
 
@@ -99,10 +90,27 @@ public class APIRequestService {
         return bucketMetadata.orElseGet( () -> new BucketMetadata( bucket.getBucketName(), defaultAccessInfo.getRead(), defaultAccessInfo.getWrite() ) );
     }
 
-    public List<BucketMetadata> fetchBucketsMetaDataByUserName(String userName, String email) {
+    public List<BucketObjectMetadata> fetchBucketObjectsMetaDataByBucketNameAndUserId(String bucketName, int userId) {
+        log.info( "Inside fetchBucketObjectsMetaDataByBucketNameAndUserId" );
+        try {
+            BucketAggregate bucket = Objects.requireNonNull( bucketAggregateRepository.findByBucketName( bucketName ) );
+            Optional<UserAggregate> user = userAggregateRepository.findById( userId );
+            if (user.isPresent() && !bucket.getBucketObjects().isEmpty())
+                return bucket.getBucketObjects().stream()
+                        .map( bucketObjectAggregate -> mapToReadModel( bucketObjectAggregate, user.get() ) )
+                        .filter( Objects::nonNull )
+                        .sorted( Comparator.comparing( BucketObjectMetadata::getObjectName ) )
+                        .collect( Collectors.toList() );
+        } catch (Exception e) {
+            log.error( "Exception inside fetchBucketObjectsMetaDataByBucketAndUser service layer ", e );
+        }
+        return Collections.emptyList();
+    }
+
+    public List<BucketMetadata> fetchBucketsMetaDataByUserId(int userId) {
         log.info( "Inside fetchMetaDataForBucketsInS3" );
         try {
-            Optional<UserAggregate> user = userAggregateRepository.findByUserNameAndEmail( userName, email );
+            Optional<UserAggregate> user = userAggregateRepository.findById( userId );
             if (user.isPresent()) {
                 return bucketAggregateRepository.findAll().stream()
                         .map( bucket -> extractBucketMetadata( bucket, user.get().getUserId() ) )
@@ -114,16 +122,15 @@ public class APIRequestService {
         return Collections.emptyList();
     }
 
-
-    public boolean createAdmin(UserDto user) {
+    public boolean createAdmin(int userId) {
 
         log.info( "Inside createAdmin" );
         try {
-            Optional<UserAggregate> userExists = this.userAggregateRepository.findByUserNameAndEmail( user.getUserName(), user.getEmail() );
+            Optional<UserAggregate> userExists = this.userAggregateRepository.findById( userId );
             if (userExists.isPresent()) {
-                System.out.println( "inside" );
+
                 AdminAggregate newAdmin = new AdminAggregate();
-                newAdmin.setUserId( userExists.get().getUserId() );
+                newAdmin.setUserId( userId );
                 newAdmin.setCreatedOn( new Date() );
                 final AdminAggregate newlyCreatedAdmin = adminAggregateRepository.save( newAdmin );
                 AdminRoleAggregate assignNewAdminWithAdminRole = new AdminRoleAggregate();
@@ -137,8 +144,13 @@ public class APIRequestService {
         return false;
     }
 
+    private boolean isDefaultAdmin() {
+        return adminRoleAggregateRepository.findAll().isEmpty() && userAggregateRepository.findAll().size() == 1;
+    }
+
     private boolean isAdmin(UserAggregate user) {
         log.info( "Inside isAdmin" );
+        // initial setup first user admin by default
         final Optional<AdminRoleAggregate> adminRoleAggregate = adminRoleAggregateRepository.findById( UUID.fromString( "5fc03087-d265-11e7-b8c6-83e29cd24f4c" ).toString() );
         if (adminRoleAggregate.isPresent()) {
             final Optional<AdminAggregate> adminAggregate = this.adminAggregateRepository.findById( adminRoleAggregate.get().getAdminId() );
@@ -149,18 +161,24 @@ public class APIRequestService {
         return false;
     }
 
+    public String generateUniqueUserName(UserDto user) {
+        return (validateUserNameAsEmail( user.getUserName() )) ?
+                user.getUserName().split( "@" )[0] + "_" + user.getEmail().split( "@" )[0] :
+                user.getUserName() + "_" + user.getEmail().split( "@" )[0];
+    }
+
     public UserLoginStatus registerUserAndCheckIsAdmin(UserDto user) {
         log.info( "Inside registerUserAndCheckIsAdmin" );
         try {
-            Optional<UserAggregate> userExists = this.userAggregateRepository.findByUserNameAndEmail( user.getUserName(), user.getEmail() );
-            if (userExists.isPresent()) {
-                return new UserLoginStatus( userExists.get(), isAdmin( userExists.get() ) );
+            UserAggregate userExists = this.userAggregateRepository.findByUserName( generateUniqueUserName( user ) );
+            if (userExists != null) {
+                return new UserLoginStatus( userExists, isAdmin( userExists ), isDefaultAdmin() );
             } else {
                 UserAggregate newUser = new UserAggregate();
-                newUser.setUserName( user.getUserName() );
+                newUser.setUserName( generateUniqueUserName( user ) );
                 newUser.setEmail( user.getEmail() );
                 final UserAggregate savedUser = userAggregateRepository.save( newUser );
-                return new UserLoginStatus( savedUser, false );
+                return new UserLoginStatus( savedUser, false, isDefaultAdmin() );
             }
 
         } catch (Exception e) {
@@ -194,6 +212,7 @@ public class APIRequestService {
                     UserMetadata userMetadata = new UserMetadata();
                     userMetadata.setName( userAggregate.getUserName() );
                     userMetadata.setEmail( userAggregate.getEmail() );
+                    userMetadata.setUserId( userAggregate.getUserId() );
                     boolean isAdmin = isAdmin( userAggregate );
                     userMetadata.setAdmin( isAdmin );
                     bucketAggregateRepository.findAll().forEach( bucketAggregate -> {
@@ -213,4 +232,25 @@ public class APIRequestService {
                 .collect( Collectors.toList() );
     }
 
+    public Boolean doesAccessExist(int userId, String bucketName, String accessType) {
+        log.info( "Inside getUserBucketMetadata" );
+        try {
+            BucketAggregate bucket = bucketAggregateRepository.findByBucketName( bucketName );
+            boolean isUserExists = bucket.getBucketAccessingUsers().stream()
+                    .anyMatch( bucketAccessingUser -> bucketAccessingUser.getUserId() == userId );
+            if (isUserExists) {
+                final Optional<BucketAccessingUser> accessingUser = bucket.getBucketAccessingUsers().stream()
+                        .filter( bucketAccessingUser -> bucketAccessingUser.getUserId() == userId )
+                        .findAny();
+                if (accessingUser.isPresent()) {
+                    Optional<BucketAccessEntity> access = bucketAccessEntityRepository.findById( accessingUser.get().getBucketAccessId() );
+                    if (access.isPresent() && accessType.equals( "read" )) return access.get().getRead();
+                    if (access.isPresent() && accessType.equals( "write" )) return access.get().getWrite();
+                }
+            }
+        } catch (Exception e) {
+            log.error( "Exception while doesAccessExist " + e.getMessage() );
+        }
+        return false;
+    }
 }

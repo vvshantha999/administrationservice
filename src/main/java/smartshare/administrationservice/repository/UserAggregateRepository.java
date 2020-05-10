@@ -8,9 +8,7 @@ import java.util.Optional;
 
 @Repository
 public interface UserAggregateRepository extends JpaRepository<UserAggregate, Integer> {
+
     UserAggregate findByUserName(String userName);
-
     Optional<UserAggregate> findByUserNameAndEmail(String userName, String email);
-
-    Boolean existsByUserNameAndEmail(String userName, String email);
 }

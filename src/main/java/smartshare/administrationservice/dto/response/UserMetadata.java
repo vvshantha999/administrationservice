@@ -11,6 +11,7 @@ class UserMetadata {
     // result for users screen
     private String name;
     private String email;
+    private int userId;
     private boolean admin;
     private int bucketCount;
     private List<String> bucketNames = new ArrayList<>();

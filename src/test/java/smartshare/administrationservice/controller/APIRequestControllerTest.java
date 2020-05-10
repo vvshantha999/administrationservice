@@ -85,7 +85,7 @@ class APIRequestControllerTest {
         bucketAccess.setWrite( false );
         BucketMetadata bucketMetadata = new BucketMetadata( "file.server.1", bucketAccess.getRead(), bucketAccess.getWrite() );
 
-        when( apiRequestService.fetchBucketsMetaDataByUserName( "sethuram", "sethuram500@gmail.com" ) )
+        when( apiRequestService.fetchBucketsMetaDataByUserId( 1 ) )
                 .thenReturn( Collections.singletonList( bucketMetadata ) );
         // execute the get request
 
@@ -111,7 +111,7 @@ class APIRequestControllerTest {
         user.setUserName( "sethuram" );
         user.setEmail( "sethuram@gmail.com" );
 
-        UserLoginStatus userLoginStatus = new UserLoginStatus( user, false );
+        UserLoginStatus userLoginStatus = new UserLoginStatus( user, false, false );
 
         when( apiRequestService.registerUserAndCheckIsAdmin( userDto ) )
                 .thenReturn( userLoginStatus );

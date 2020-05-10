@@ -131,7 +131,7 @@ public class BucketObjectAccessRequestService {
     }
 
     @Transactional
-    Boolean approveBucketObjectAccessRequest(BucketObjectAccessRequestDto bucketObjectAccessRequest) {
+    public Boolean approveBucketObjectAccessRequest(BucketObjectAccessRequestDto bucketObjectAccessRequest) {
         log.info( "Inside approveBucketObjectAccessRequest" );
         try {
             Optional<BucketObjectAccessRequestEntity> bucketObjectAccessRequestEntityExists = bucketObjectAccessRequestEntityRepository.findById( bucketObjectAccessRequest.getId() );
@@ -230,8 +230,9 @@ public class BucketObjectAccessRequestService {
 
     // not related to access request
 
-    private List<FileComponent> extractAccessingUsers(BucketObjectAggregate bucketObjectAggregate, String ownerName) {
+    private List<FileComponent> extractAccessingUsers(BucketObjectAggregate bucketObjectAggregate, UserAggregate owner) {
         return bucketObjectAggregate.getAccessingUsers().stream()
+                .filter( bucketObjectAccessingUser -> bucketObjectAccessingUser.getUserId() != owner.getUserId() )
                 .map( bucketObjectAccessingUser -> {
                     Optional<UserAggregate> user = userAggregateRepository.findById( bucketObjectAccessingUser.getUserId() );
                     Optional<ObjectAccessEntity> access = objectAccessEntityRepository.findById( bucketObjectAccessingUser.getObjectAccessId() );
@@ -241,7 +242,7 @@ public class BucketObjectAccessRequestService {
                                 (Boolean.TRUE.equals( access.get().getWrite() ) ? "Write" : "") +
                                 " " +
                                 (Boolean.TRUE.equals( access.get().getDelete() ) ? "Delete" : "");
-                        return new FileComponent( bucketObjectAggregate.getBucketObjectName(), ownerName, user.get().getUserName(), accessInfo );
+                        return new FileComponent( bucketObjectAggregate.getBucketObjectName(), owner.getUserName(), user.get().getUserName(), accessInfo );
                     }
                     return null;
                 } )
@@ -249,44 +250,50 @@ public class BucketObjectAccessRequestService {
                 .collect( Collectors.toList() );
     }
 
+    private FolderComponent identifyNameOfOwnerFolder(BucketObjectAggregate bucketObject, FolderComponent previousFolder, UserAggregate owner) {
+        List<String> previousFolderSplits = Arrays.asList( previousFolder.getCompleteName().split( "/" ) );
+        List<String> currentFolderSplits = Arrays.asList( bucketObject.getBucketObjectName().split( "/" ) );
+        String name = "";
+        if (previousFolderSplits.isEmpty()) name = bucketObject.getBucketObjectName().replace( "/", "" );
+        else {
+            if (!previousFolderSplits.get( previousFolderSplits.size() - 1 ).equals( currentFolderSplits.get( currentFolderSplits.size() - 1 ) )) {
+                if (previousFolderSplits.size() == currentFolderSplits.size())
+                    return (FolderComponent) previousFolder.getParent().add( new FolderComponent( currentFolderSplits.get( currentFolderSplits.size() - 1 ), bucketObject.getBucketObjectName(), owner.getUserName(), previousFolder.getParent() ) );
+                name = currentFolderSplits.get( currentFolderSplits.size() - 1 );
 
-    private FolderComponent ownerFileStructureConverter(List<BucketObjectAggregate> bucketObjectAggregateStream, String bucketName, String ownerName) {
+            }
+        }
+
+        return (FolderComponent) previousFolder.add( new FolderComponent( name, bucketObject.getBucketObjectName(), owner.getUserName(), previousFolder ) );
+
+    }
+
+
+    private FolderComponent ownerFileStructureConverter(List<BucketObjectAggregate> bucketObjects, String bucketName, UserAggregate owner) {
         log.info( "Inside ownerFileStructureConverter" );
 
         // Forming the root node
 
-        FolderComponent root = new FolderComponent( bucketName, ownerName );
+        FolderComponent root = new FolderComponent( bucketName, "/", owner.getUserName(), null );
         FolderComponent previousFolder = root;
-        for (BucketObjectAggregate bucketObject : bucketObjectAggregateStream) {
 
-            // file in root folder
+        for (BucketObjectAggregate bucketObject : bucketObjects) {
+
+
             if (fileExtensionRegex.matcher( bucketObject.getBucketObjectName() ).matches() && (!bucketObject.getBucketObjectName().contains( "/" ))) {
-                root.addAll( extractAccessingUsers( bucketObject, ownerName ) );
-                // root.add( new FileComponent( extractedKey.getKey(), currentKeyAccessInfo, owner, extractedKey.getKey(), extractedKey.getValue() ) );
-            }
-
-            //only folders and files within folders are allowed
-            if (bucketObject.getBucketObjectName().endsWith( "/" ) || fileExtensionRegex.matcher( bucketObject.getBucketObjectName() ).matches()) {
-
-                //first level of folder
-                if (bucketObject.getBucketObjectName().endsWith( "/" ) && (previousFolder.getName().equals( bucketName ) || !bucketObject.getBucketObjectName().contains( previousFolder.getName() + "/" ))) {
-                    previousFolder = (FolderComponent) root.add( new FolderComponent( bucketObject.getBucketObjectName().replace( "/", " " ).trim(), ownerName ) );
-                } else // sub level in folders
-                    if (bucketObject.getBucketObjectName().endsWith( "/" ) && bucketObject.getBucketObjectName().contains( previousFolder.getName() + "/" )) {
-                        previousFolder = (FolderComponent) previousFolder.add( new FolderComponent( bucketObject.getBucketObjectName().replace( previousFolder.getName(), " " ).replace( "/", " " ).trim(), ownerName ) );
-                    } else //file in sub level folders
-                        if (fileExtensionRegex.matcher( bucketObject.getBucketObjectName() ).matches() && bucketObject.getBucketObjectName().contains( previousFolder.getName() + "/" )) {
-                            previousFolder.addAll( extractAccessingUsers( bucketObject, ownerName ) );
-                            // previousFolder.addAll( new FileComponent( extractedKey.getKey().replace( previousFolder.getCompleteName(), " " ).trim(), currentKeyAccessInfo, owner, extractedKey.getKey(), extractedKey.getValue() ) );
-                        }
+                root.addAll( extractAccessingUsers( bucketObject, owner ) );
             } else {
-                //file without extensions
-                previousFolder.addAll( extractAccessingUsers( bucketObject, ownerName ) );
-                // previousFolder.add( new FileComponent( extractedKey.getKey().replace( previousFolder.getCompleteName(), " " ).trim(), currentKeyAccessInfo, owner, extractedKey.getKey(), extractedKey.getValue() ) );
+                if (bucketObject.getBucketObjectName().endsWith( "/" ))
+                    previousFolder = identifyNameOfOwnerFolder( bucketObject, previousFolder, owner );
+                else {
+                    previousFolder.addAll( extractAccessingUsers( bucketObject, owner ) );
+                }
             }
         }
         return root;
+
     }
+
 
     public FolderComponent getListOfUsersAccessingOwnerObjects(String bucketName, int ownerId) {
         log.info( "Inside getListOfUsersAccessingOwnerObject" );
@@ -297,20 +304,20 @@ public class BucketObjectAccessRequestService {
                     .filter( bucketObjectAggregate -> bucketObjectAggregate.getOwnerId() == owner.get().getUserId() )
                     .sorted( Comparator.comparing( BucketObjectAggregate::getBucketObjectName ) )
                     .collect( Collectors.toList() );
-            return this.ownerFileStructureConverter( bucketObjectAggregateStream, bucketName, owner.get().getUserName() );
+            return this.ownerFileStructureConverter( bucketObjectAggregateStream, bucketName, owner.get() );
         }
         return null;
     }
 
 
-    private UserFolderComponent extractAccess(BucketObjectAggregate bucketObjectAggregate, int userId) {
+    private UserFolderComponent extractAccess(BucketObjectAggregate bucketObjectAggregate, int userId, UserFolderComponent previousFolder) {
         log.info( "Inside extractAccess" );
         return bucketObjectAggregate.getAccessingUsers().stream()
                 .filter( bucketObjectAccessingUser -> bucketObjectAccessingUser.getUserId() == userId )
                 .findAny()
                 .map( bucketObjectAccessingUser -> {
                     Optional<ObjectAccessEntity> access = objectAccessEntityRepository.findById( bucketObjectAccessingUser.getObjectAccessId() );
-                    UserFolderComponent userFolderComponent = new UserFolderComponent( bucketObjectAggregate.getBucketObjectName() );
+                    UserFolderComponent userFolderComponent = (null != previousFolder) ? new UserFolderComponent( bucketObjectAggregate.getBucketObjectName(), bucketObjectAggregate.getBucketObjectName(), previousFolder.getParent() ) : new UserFolderComponent( bucketObjectAggregate.getBucketObjectName(), bucketObjectAggregate.getBucketObjectName(), null );
                     if (access.isPresent()) {
                         if (Boolean.TRUE.equals( access.get().getRead() ))
                             userFolderComponent.add( new UserFileComponent( "Read" ) );
@@ -321,39 +328,55 @@ public class BucketObjectAccessRequestService {
                     }
                     return userFolderComponent;
                 } )
-                .orElseGet( () -> new UserFolderComponent( bucketObjectAggregate.getBucketObjectName() ) );
+                .orElseGet( () -> new UserFolderComponent( bucketObjectAggregate.getBucketObjectName(), bucketObjectAggregate.getBucketObjectName(), previousFolder.getParent() ) );
     }
+
+
+    private UserFolderComponent identifyNameOfFolder(BucketObjectAggregate bucketObjectAggregate, UserFolderComponent previousFolder) {
+
+        List<String> previousFolderSplits = Arrays.asList( previousFolder.getCompleteName().split( "/" ) );
+        List<String> currentFolderSplits = Arrays.asList( bucketObjectAggregate.getBucketObjectName().split( "/" ) );
+        String name = "";
+
+        if (previousFolderSplits.isEmpty()) name = bucketObjectAggregate.getBucketObjectName().replace( "/", "" );
+        else {
+            if (!previousFolderSplits.get( previousFolderSplits.size() - 1 ).equals( currentFolderSplits.get( currentFolderSplits.size() - 1 ) )) {
+                if (previousFolderSplits.size() == currentFolderSplits.size())
+                    return (UserFolderComponent) previousFolder.getParent().add( new UserFolderComponent( currentFolderSplits.get( currentFolderSplits.size() - 1 ), bucketObjectAggregate.getBucketObjectName(), previousFolder.getParent() ) );
+                name = currentFolderSplits.get( currentFolderSplits.size() - 1 );
+            }
+        }
+        return (UserFolderComponent) previousFolder.add( new UserFolderComponent( name, bucketObjectAggregate.getBucketObjectName(), previousFolder ) );
+    }
+
+    private Boolean checkPreviousFolderInFile(String previousFolderName, String currentObjectName) {
+        List<String> previousFolderSplits = Arrays.asList( previousFolderName.split( "/" ) );
+        List<String> currentFolderSplits = Arrays.asList( currentObjectName.split( "/" ) );
+        return previousFolderSplits.get( previousFolderSplits.size() - 1 ).equals( currentFolderSplits.get( currentFolderSplits.size() - 2 ) );
+    }
+
 
     private UserFolderComponent userFileStructureConverter(List<BucketObjectAggregate> bucketObjects, String bucketName, UserAggregate user) {
         log.info( "Inside userFileStructureConverter" );
 
         // Forming the root node
 
-        UserFolderComponent root = new UserFolderComponent( bucketName );
+        UserFolderComponent root = new UserFolderComponent( bucketName, "/", null );
         UserFolderComponent previousFolder = root;
-
         for (BucketObjectAggregate bucketObject : bucketObjects) {
 
-            // file in root folder
-            if (fileExtensionRegex.matcher( bucketObject.getBucketObjectName() ).matches() && (!bucketObject.getBucketObjectName().contains( "/" )))
-                root.add( extractAccess( bucketObject, user.getUserId() ) );
-
-            //only folders and files within folders are allowed
-            if (bucketObject.getBucketObjectName().endsWith( "/" ) || fileExtensionRegex.matcher( bucketObject.getBucketObjectName() ).matches()) {
-
-                //first level of folder
-                if (bucketObject.getBucketObjectName().endsWith( "/" ) && (previousFolder.getName().equals( bucketName ) || !bucketObject.getBucketObjectName().contains( previousFolder.getName() + "/" ))) {
-                    previousFolder = (UserFolderComponent) root.add( new UserFolderComponent( bucketObject.getBucketObjectName().replace( "/", " " ).trim() ) );
-                } else // sub level in folders
-                    if (bucketObject.getBucketObjectName().endsWith( "/" ) && bucketObject.getBucketObjectName().contains( previousFolder.getName() + "/" )) {
-                        previousFolder = (UserFolderComponent) previousFolder.add( new UserFolderComponent( bucketObject.getBucketObjectName().replace( previousFolder.getName(), " " ).replace( "/", " " ).trim() ) );
-                    } else //file in sub level folders
-                        if (fileExtensionRegex.matcher( bucketObject.getBucketObjectName() ).matches() && bucketObject.getBucketObjectName().contains( previousFolder.getName() + "/" )) {
-                            previousFolder.add( extractAccess( bucketObject, user.getUserId() ) );
-                        }
+            if (fileExtensionRegex.matcher( bucketObject.getBucketObjectName() ).matches() && (!bucketObject.getBucketObjectName().contains( "/" ))) {
+                root.add( extractAccess( bucketObject, user.getUserId(), previousFolder ) );
             } else {
-                //file without extensions
-                previousFolder.add( extractAccess( bucketObject, user.getUserId() ) );
+                if (bucketObject.getBucketObjectName().endsWith( "/" ))
+                    previousFolder = identifyNameOfFolder( bucketObject, previousFolder );
+                else {
+                    if (checkPreviousFolderInFile( previousFolder.getCompleteName(), bucketObject.getBucketObjectName() )) {
+                        previousFolder.add( extractAccess( bucketObject, user.getUserId(), previousFolder ) );
+                    } else {
+                        previousFolder.getParent().add( extractAccess( bucketObject, user.getUserId(), previousFolder ) );
+                    }
+                }
             }
         }
         return root;

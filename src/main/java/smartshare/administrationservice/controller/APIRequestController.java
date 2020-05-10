@@ -34,17 +34,17 @@ public class APIRequestController {
     }
 
     @GetMapping(value = "buckets/accessInfo")
-    public BucketsMetadata fetchMetaDataForBucketsInS3(@RequestParam("userName") String userName, @RequestParam("email") String email) {
+    public BucketsMetadata fetchMetaDataForBucketsInS3(@RequestParam("userId") int userId) {
         log.info( "Inside fetchMetaDataForObjectsInS3" );
-        return new BucketsMetadata( apiRequestService.fetchBucketsMetaDataByUserName( userName, email ) );
+        return new BucketsMetadata( apiRequestService.fetchBucketsMetaDataByUserId( userId ) );
     }
 
     @PostMapping(path = "register")
     public UserLoginStatus registerUser(@RequestBody UserDto user) {
         log.info( "Inside register user" );
-        System.out.println( user );
+
         final UserLoginStatus userLoginStatus = apiRequestService.registerUserAndCheckIsAdmin( user );
-        System.out.println( "userLoginStatus----->" + userLoginStatus );
+
         return userLoginStatus;
     }
 
@@ -61,9 +61,18 @@ public class APIRequestController {
     }
 
     @PostMapping("makeAdmin")
-    public Boolean makeUserAdmin(@RequestBody UserDto user) {
+    public Boolean makeUserAdmin(@RequestBody int userId) {
         log.info( "Inside makeUserAdmin" );
-        return apiRequestService.createAdmin( user );
+        return apiRequestService.createAdmin( userId );
+    }
+
+    @GetMapping(path = "doesAccessExist")
+    public Boolean doesAccessExist(@RequestParam("userId") int userId,
+                                   @RequestParam("bucketName") String bucketName,
+                                   @RequestParam("accessType") String accessType
+    ) {
+        log.info( "Inside doesAccessExist" );
+        return apiRequestService.doesAccessExist( userId, bucketName, accessType );
     }
 
 

@@ -67,15 +67,11 @@ public class BucketObjectAdministrationService {
     public BucketObjectEvent createAccessDetailForBucketObject(BucketObjectEvent bucketObjectFromApi) {
         log.info( "Inside createAccessDetailForBucketObject" );
         try {
-            System.out.println( "bucketObjectFromApi-->" + bucketObjectFromApi.toString() );
+
             BucketAggregate bucket = Objects.requireNonNull( bucketAggregateRepository.findByBucketName( bucketObjectFromApi.getBucketName() ) );
             Optional<UserAggregate> owner = userAggregateRepository.findById( bucketObjectFromApi.getOwnerId() );
-            System.out.println( "owner--->" + owner.isPresent() );
-            System.out.println( "bucket--->" + bucket.getBucketName() );
-            System.out.println( "bucket--->" + bucket.getBucketAccessingUsers().size() );
-            System.out.println( "bucket.isUserExistsInBucket( owner.get().getUserId() ) ---" + bucket.isUserExistsInBucket( owner.get().getUserId() ) );
+            if (owner.isPresent()) {
 
-            if (owner.isPresent() && Boolean.TRUE.equals( bucket.isUserExistsInBucket( owner.get().getUserId() ) )) {
                 bucket.addBucketObject( bucketObjectFromApi.getObjectName(), owner.get().getUserId() );
                 bucketAggregateRepository.save( bucket );
                 log.info( bucketObjectFromApi.toString() + " access details created successfully" );

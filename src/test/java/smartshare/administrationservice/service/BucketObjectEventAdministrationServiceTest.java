@@ -235,8 +235,6 @@ class BucketObjectEventAdministrationServiceTest {
         bucket.addBucketAccessingUsers( 1, 3 );
 
 
-        System.out.println( "bucketObjectFromApis---" + bucketObjectFromApis );
-
         // Act
         producer.send( new ProducerRecord<>( "AccessManagement", "deleteBucketObjects", objectWriter.writeValueAsString( bucketObjectFromApis ) ) );
 
