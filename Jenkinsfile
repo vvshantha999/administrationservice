@@ -3,11 +3,12 @@ pipeline
 agent any
 stages
 {
-stage("Code Checkout")
+stage("Setting Up Environment")
 {
 steps
 {
-sh "echo "Code has been checked-out successfully""
+sh "export JAVA_HOME=/usr/lib/jvm/jdk-11.0.1"
+sh "export MAVEN_HOME=/opt/Maven/apache-maven-3.6.3"
 }
 }
 stage("Maven Compilation")
