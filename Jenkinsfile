@@ -7,7 +7,7 @@ stage("Code Checkout")
 {
 steps
 {
-sh "cd /var/lib/jenkins/workspace/SmartShare_Admin"
+sh "echo "Code has been checked-out successfully""
 }
 }
 stage("Maven Compilation")
