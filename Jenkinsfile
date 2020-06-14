@@ -3,7 +3,13 @@ pipeline
 agent any
 stages
 {
-
+stage("Build Details")
+{
+steps
+{
+sh "echo ${env.BUILD_NUMBER}"
+}
+}
 stage("Maven Compilation")
 {
 steps
